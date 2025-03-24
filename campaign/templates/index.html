@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PNP Payslip Portal | Log in</title>
+    
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/pnp-logooo.png') }}">
+    
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    </head>
+    
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <a href="#">
+                <img src="{{ url_for('static', filename='images/pnp-logoo.png') }}" alt="PNP Seal" class="block-center img-rounded">
+            </a>
+        </div>
+        
+        <div class="welcome-message">
+            <h1>WELCOME TO THE NEW PNP<br>ONLINE PAYSLIP</h1>
+            <p>SIGN IN TO CONTINUE.</p>
+        </div>
+
+        <form class="login-form" id="loginForm" action="/login" method="post" novalidate>
+            <div class="input-group">
+                <input type="text" id="username" name="username" placeholder="Username" required>
+                <i class="fas fa-envelope input-icon"></i>
+                <div class="error-message" id="usernameError"></div>
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="password" name="password" placeholder="Password" required>
+                <i class="fas fa-lock input-icon password-icon"></i>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html> 
