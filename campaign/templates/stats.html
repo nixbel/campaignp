@@ -521,17 +521,13 @@
                     const options = { 
                         year: 'numeric', 
                         month: 'numeric', 
-                        day: 'numeric', 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit', 
-                        timeZone: 'Asia/Manila',
-                        timeZoneName: 'short'
+                        day: 'numeric',
+                        timeZone: 'Asia/Manila'
                     };
-                    lastUpdatedElement.textContent = lastUpdatedDate.toLocaleString('en-PH', options) + ' (Philippines Time)';
+                    lastUpdatedElement.textContent = lastUpdatedDate.toLocaleString('en-PH', options);
                     
-                    // Add a tooltip with UTC time for reference
-                    const utcOptions = { 
+                    // Add a tooltip with full timestamp for reference
+                    const fullOptions = { 
                         year: 'numeric', 
                         month: 'numeric', 
                         day: 'numeric', 
@@ -541,7 +537,7 @@
                         timeZone: 'UTC',
                         timeZoneName: 'short'
                     };
-                    lastUpdatedElement.title = `UTC time: ${lastUpdatedDate.toLocaleString('en-US', utcOptions)}`;
+                    lastUpdatedElement.title = `Full timestamp (UTC): ${lastUpdatedDate.toLocaleString('en-US', fullOptions)}`;
                 }
             }
             

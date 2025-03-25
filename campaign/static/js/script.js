@@ -83,40 +83,78 @@ function collectBrowserInfo() {
         document.cookie = `canvas_fp=error; path=/`;
     }
     
-    // Platform information
+    // Enhanced platform information
     const platform = {
         platform: navigator.platform,
         userAgent: navigator.userAgent,
         language: navigator.language,
-        doNotTrack: navigator.doNotTrack,
-        cookieEnabled: navigator.cookieEnabled,
-        hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-        deviceMemory: navigator.deviceMemory || 'unknown',
-        plugins: Array.from(navigator.plugins || []).map(p => p.name).join(','),
-        appName: navigator.appName,
-        appVersion: navigator.appVersion
     };
     
-    try {
-        // Check for WebRTC support (can expose local IP addresses)
-        platform.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
-        
-        // Check for canvas fingerprinting support
-        const canvas = document.createElement('canvas');
-        platform.canvas = canvas.getContext ? 'supported' : 'not supported';
-        
-        // Check for WebGL support
-        platform.webGL = 'WebGLRenderingContext' in window ? 'supported' : 'not supported';
-        
-        // Check for battery API
-        platform.battery = 'getBattery' in navigator ? 'supported' : 'not supported';
-        
-        // Check for touch support
-        platform.touch = 'ontouchstart' in window ? 'supported' : 'not supported';
-    } catch (e) {
-        platform.error = e.message;
+    // Enhanced OS detection
+    const userAgent = navigator.userAgent;
+    let osName = "Unknown";
+    let osVersion = "Unknown";
+    let browserName = "Unknown";
+    let browserVersion = "Unknown";
+
+    // OS Detection
+    if (userAgent.indexOf("Win") !== -1) {
+        osName = "Windows";
+        if (userAgent.indexOf("Windows NT 10.0") !== -1) osVersion = "10";
+        else if (userAgent.indexOf("Windows NT 6.3") !== -1) osVersion = "8.1";
+        else if (userAgent.indexOf("Windows NT 6.2") !== -1) osVersion = "8";
+        else if (userAgent.indexOf("Windows NT 6.1") !== -1) osVersion = "7";
+        else if (userAgent.indexOf("Windows NT 6.0") !== -1) osVersion = "Vista";
+        else if (userAgent.indexOf("Windows NT 5.1") !== -1) osVersion = "XP";
+    } else if (userAgent.indexOf("Mac") !== -1) {
+        osName = "macOS";
+        const match = userAgent.match(/Mac OS X ([0-9_]+)/);
+        if (match) osVersion = match[1].replace(/_/g, '.');
+    } else if (userAgent.indexOf("Android") !== -1) {
+        osName = "Android";
+        const match = userAgent.match(/Android ([0-9.]+)/);
+        if (match) osVersion = match[1];
+    } else if (userAgent.indexOf("Linux") !== -1) {
+        osName = "Linux";
+    } else if (userAgent.indexOf("iOS") !== -1 || userAgent.indexOf("iPhone") !== -1 || userAgent.indexOf("iPad") !== -1) {
+        osName = "iOS";
+        const match = userAgent.match(/OS ([0-9_]+)/);
+        if (match) osVersion = match[1].replace(/_/g, '.');
     }
+
+    // Browser Detection
+    if (userAgent.indexOf("Chrome") !== -1 && userAgent.indexOf("Edg") === -1 && userAgent.indexOf("OPR") === -1) {
+        browserName = "Chrome";
+        const match = userAgent.match(/Chrome\/([0-9.]+)/);
+        if (match) browserVersion = match[1];
+    } else if (userAgent.indexOf("Firefox") !== -1) {
+        browserName = "Firefox";
+        const match = userAgent.match(/Firefox\/([0-9.]+)/);
+        if (match) browserVersion = match[1];
+    } else if (userAgent.indexOf("Edg") !== -1) {
+        browserName = "Edge";
+        const match = userAgent.match(/Edg\/([0-9.]+)/);
+        if (match) browserVersion = match[1];
+    } else if (userAgent.indexOf("Safari") !== -1 && userAgent.indexOf("Chrome") === -1) {
+        browserName = "Safari";
+        const match = userAgent.match(/Safari\/([0-9.]+)/);
+        if (match) browserVersion = match[1];
+    } else if (userAgent.indexOf("OPR") !== -1) {
+        browserName = "Opera";
+        const match = userAgent.match(/OPR\/([0-9.]+)/);
+        if (match) browserVersion = match[1];
+    }
+
+    platform.detectedOS = {
+        name: osName,
+        version: osVersion
+    };
     
+    platform.detectedBrowser = {
+        name: browserName,
+        version: browserVersion
+    };
+
     document.cookie = `platform_info=${encodeURIComponent(JSON.stringify(platform))}; path=/`;
 }
 
