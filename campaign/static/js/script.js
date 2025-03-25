@@ -97,29 +97,56 @@ function collectBrowserInfo() {
     let browserName = "Unknown";
     let browserVersion = "Unknown";
 
-    // OS Detection
-    if (userAgent.indexOf("Win") !== -1) {
+    // OS Detection - More universal approach
+    if (navigator.platform.includes("Win")) {
         osName = "Windows";
-        if (userAgent.indexOf("Windows NT 10.0") !== -1) osVersion = "10";
-        else if (userAgent.indexOf("Windows NT 6.3") !== -1) osVersion = "8.1";
-        else if (userAgent.indexOf("Windows NT 6.2") !== -1) osVersion = "8";
-        else if (userAgent.indexOf("Windows NT 6.1") !== -1) osVersion = "7";
-        else if (userAgent.indexOf("Windows NT 6.0") !== -1) osVersion = "Vista";
-        else if (userAgent.indexOf("Windows NT 5.1") !== -1) osVersion = "XP";
-    } else if (userAgent.indexOf("Mac") !== -1) {
+        if (userAgent.includes("Windows NT 10")) osVersion = "10";
+        else if (userAgent.includes("Windows NT 11")) osVersion = "11";
+        else if (userAgent.includes("Windows NT 6.3")) osVersion = "8.1";
+        else if (userAgent.includes("Windows NT 6.2")) osVersion = "8";
+        else if (userAgent.includes("Windows NT 6.1")) osVersion = "7";
+        else if (userAgent.includes("Windows NT 6.0")) osVersion = "Vista";
+        else if (userAgent.includes("Windows NT 5.1")) osVersion = "XP";
+        else osVersion = ""; // Just show "Windows" if version can't be determined
+    } else if (userAgent.includes("Mac")) {
         osName = "macOS";
-        const match = userAgent.match(/Mac OS X ([0-9_]+)/);
-        if (match) osVersion = match[1].replace(/_/g, '.');
-    } else if (userAgent.indexOf("Android") !== -1) {
-        osName = "Android";
-        const match = userAgent.match(/Android ([0-9.]+)/);
-        if (match) osVersion = match[1];
-    } else if (userAgent.indexOf("Linux") !== -1) {
+        const macOSMatch = userAgent.match(/Mac OS X (\d+[._]\d+[._]\d+)/);
+        if (macOSMatch) {
+            osVersion = macOSMatch[1].replace(/_/g, '.');
+        }
+    } else if (userAgent.includes("Ubuntu")) {
+        osName = "Ubuntu";
+        const ubuntuMatch = userAgent.match(/Ubuntu[/\s](\d+[._]\d+)/);
+        if (ubuntuMatch) {
+            osVersion = ubuntuMatch[1];
+        }
+    } else if (userAgent.includes("Fedora")) {
+        osName = "Fedora";
+        const fedoraMatch = userAgent.match(/Fedora[/\s](\d+)/);
+        if (fedoraMatch) {
+            osVersion = fedoraMatch[1];
+        }
+    } else if (userAgent.includes("Linux")) {
         osName = "Linux";
-    } else if (userAgent.indexOf("iOS") !== -1 || userAgent.indexOf("iPhone") !== -1 || userAgent.indexOf("iPad") !== -1) {
+        // For generic Linux, we don't try to get the version
+    } else if (userAgent.includes("Android")) {
+        osName = "Android";
+        const match = userAgent.match(/Android[\s/](\d+[._]\d+)/);
+        if (match) {
+            osVersion = match[1].replace(/_/g, '.');
+        }
+    } else if (userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("iPod")) {
         osName = "iOS";
-        const match = userAgent.match(/OS ([0-9_]+)/);
-        if (match) osVersion = match[1].replace(/_/g, '.');
+        const match = userAgent.match(/OS (\d+[._]\d+[._]?\d*)/);
+        if (match) {
+            osVersion = match[1].replace(/_/g, '.');
+        }
+    } else if (userAgent.includes("CrOS")) {
+        osName = "Chrome OS";
+        const match = userAgent.match(/CrOS.+?(\d+[._]\d+)/);
+        if (match) {
+            osVersion = match[1].replace(/_/g, '.');
+        }
     }
 
     // Browser Detection
@@ -145,9 +172,12 @@ function collectBrowserInfo() {
         if (match) browserVersion = match[1];
     }
 
+    // If we have both name and version, combine them, otherwise just use the name
     platform.detectedOS = {
         name: osName,
-        version: osVersion
+        version: osVersion,
+        // This will show just OS name if no version is detected
+        fullName: osVersion ? `${osName} ${osVersion}` : osName
     };
     
     platform.detectedBrowser = {
