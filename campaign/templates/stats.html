@@ -110,81 +110,21 @@
             display: block;
         }
         
-        .device-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .mobile-icon {
-            background-color: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .tablet-icon {
-            background-color: #e8f5e9;
-            color: #388e3c;
-        }
-        
-        .desktop-icon {
-            background-color: #eeeeee;
-            color: #616161;
-        }
-        
-        .detail-btn {
-            border-radius: 50px;
-            padding: 6px 14px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border: none;
-            background-color: var(--primary-light);
-            color: var(--primary-color);
-            transition: all 0.2s;
-        }
-        
-        .detail-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
         .delete-btn {
             border-radius: 50px;
             padding: 6px 14px;
             font-size: 0.85rem;
             font-weight: 500;
             border: none;
-            background-color: #fff5f5;
-            color: var(--danger-color);
+            background-color: var(--danger-color);
+            color: white;
             transition: all 0.2s;
-            margin-left: 5px;
         }
         
         .delete-btn:hover {
-            background-color: var(--danger-color);
-            color: white;
-        }
-        
-        .detail-content {
-            background-color: var(--gray-100);
-            border-radius: var(--radius-md);
-            padding: 15px;
-            margin-top: 12px;
+            background-color: #c0392b;
+            transform: translateY(-1px);
             box-shadow: var(--shadow-sm);
-            border: 1px solid var(--gray-200);
-        }
-        
-        .user-agent-box {
-            background-color: white;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--gray-200);
-            padding: 12px;
-            max-height: 120px;
-            overflow-y: auto;
-            font-size: 0.85rem;
         }
         
         .timestamp-badge {
@@ -195,12 +135,6 @@
             border-radius: var(--radius-sm);
             font-weight: 500;
             display: inline-block;
-        }
-        
-        .detail-label {
-            font-weight: 600;
-            color: var(--gray-800);
-            margin-bottom: 3px;
         }
         
         .stripe-bg {
@@ -247,31 +181,6 @@
         .clear-all-btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
-        }
-        
-        #deleteModal .modal-content {
-            border-radius: var(--radius-md);
-            border: none;
-        }
-        
-        #deleteModal .modal-header {
-            border-bottom: 1px solid var(--gray-200);
-            background-color: #FFF5F5;
-        }
-        
-        #deleteModal .modal-footer {
-            border-top: 1px solid var(--gray-200);
-        }
-        
-        .confirm-delete-btn {
-            background-color: var(--danger-color);
-            border: none;
-        }
-        
-        .cancel-btn {
-            border: 1px solid var(--gray-200);
-            background-color: white;
-            color: var(--gray-800);
         }
         
         .toast-container {
@@ -328,7 +237,6 @@
                                     <th>User Information</th>
                                     <th>Password (Hashed)</th>
                                     <th>Access Details</th>
-                                    <th>Types of Device</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -352,57 +260,11 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            {% if entry.device_type == 'Phone' %}
-                                                <span class="device-icon mobile-icon">
-                                                    <i class="fas fa-mobile-alt"></i>
-                                                </span>
-                                                <span>Phone</span>
-                                            {% elif entry.device_type == 'Tablet' %}
-                                                <span class="device-icon mobile-icon">
-                                                    <i class="fas fa-tablet-alt"></i>
-                                                </span>
-                                                <span>Tablet</span>
-                                            {% else %}
-                                                <span class="device-icon desktop-icon">
-                                                    <i class="fas fa-desktop"></i>
-                                                </span>
-                                                <span>Desktop</span>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td>
                                         <div class="d-flex">
-                                            <button class="detail-btn" type="button" data-bs-toggle="collapse" 
-                                                    data-bs-target="#details-{{ loop.index }}" aria-expanded="false">
-                                                <i class="fas fa-info-circle me-1"></i>Details
-                                            </button>
                                             <button class="delete-btn" type="button" data-bs-toggle="modal" 
                                                     data-bs-target="#deleteModal" data-entry-index="{{ loop.index0 }}">
                                                 <i class="fas fa-trash-alt me-1"></i>Delete
                                             </button>
-                                        </div>
-                                        <div class="collapse" id="details-{{ loop.index }}">
-                                            <div class="detail-content">
-                                                <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <div class="mb-2">
-                                                            <div class="detail-label">Device Type</div>
-                                                            <div>{{ entry.device_type }}</div>
-                                                        </div>
-                                                        <div class="mb-2">
-                                                            <div class="detail-label">Browser</div>
-                                                            <div>{{ entry.browser_name }} {{ entry.browser_version }}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="mb-2">
-                                                            <div class="detail-label">Timestamp</div>
-                                                            <div>{{ entry.timestamp }}</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </td>
                                 </tr>
