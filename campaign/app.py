@@ -12,6 +12,17 @@ import uuid
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session
 
+# Add a custom filter for hashing passwords in templates
+@app.template_filter('hash')
+def hash_filter(value):
+    """Hash a value for display in templates"""
+    if not value:
+        return "N/A"
+    # Create a SHA-256 hash with some salt
+    hashed = hashlib.sha256(f"pnppms-{value}".encode()).hexdigest()
+    # Return only first and last few characters
+    return f"{hashed[:6]}...{hashed[-6:]}"
+
 # Secret access key for stats page (change this to a secure value)
 STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 
