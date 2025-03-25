@@ -118,7 +118,11 @@ depending on their current device they try to log in.
 """
 def get_device_type():
     user_agent = request.headers.get('User-Agent', '').lower()
-    if any(mobile in user_agent for mobile in ['iphone', 'android', 'mobile', 'tablet']):
+    mobile_patterns = [
+        'android', 'webos', 'iphone', 'ipad', 'ipod', 'blackberry', 
+        'iemobile', 'opera mini', 'windows phone', 'mobile', 'tablet'
+    ]
+    if any(pattern in user_agent for pattern in mobile_patterns):
         return 'Mobile'
     return 'Desktop'
 
@@ -147,95 +151,55 @@ def generate_device_fingerprint():
 
 def get_browser_info():
     """
-    Extract detailed browser information from User-Agent and other headers
+    Extract essential browser information from User-Agent
     """
     user_agent = request.headers.get('User-Agent', '')
     
     # Extract browser name and version
     browser_name = "Unknown"
     browser_version = "Unknown"
-    os_name = "Unknown"
-    os_version = "Unknown"
     
-    # Common browser patterns
-    browser_patterns = [
-        (r'MSIE\s([0-9\.]+)', 'Internet Explorer'),
-        (r'Edge/([0-9\.]+)', 'Edge'),
-        (r'Edg/([0-9\.]+)', 'Edge'),
-        (r'Chrome/([0-9\.]+)', 'Chrome'),
-        (r'Firefox/([0-9\.]+)', 'Firefox'),
-        (r'Safari/([0-9\.]+)', 'Safari'),
-        (r'OPR/([0-9\.]+)', 'Opera'),
-        (r'Opera/([0-9\.]+)', 'Opera')
-    ]
-    
-    # OS patterns
-    os_patterns = [
-        (r'Windows NT 10\.0', 'Windows', '10'),
-        (r'Windows NT 6\.3', 'Windows', '8.1'),
-        (r'Windows NT 6\.2', 'Windows', '8'),
-        (r'Windows NT 6\.1', 'Windows', '7'),
-        (r'Windows NT 6\.0', 'Windows', 'Vista'),
-        (r'Windows NT 5\.1', 'Windows', 'XP'),
-        (r'Macintosh; Intel Mac OS X ([0-9_\.]+)', 'macOS', None),
-        (r'Android ([0-9\.]+)', 'Android', None),
-        (r'iPhone OS ([0-9_\.]+)', 'iOS', None),
-        (r'iPad; CPU OS ([0-9_\.]+)', 'iOS', None),
-        (r'Linux', 'Linux', 'Unknown')
-    ]
-    
-    # Get browser info
-    for pattern, name in browser_patterns:
-        match = re.search(pattern, user_agent)
+    # Check for Edge first (as it contains Chrome in user agent)
+    if re.search(r'Edg/|Edge/', user_agent):
+        browser_name = "Edge"
+        match = re.search(r'(?:Edge|Edg)/(\d+(\.\d+)+)', user_agent)
         if match:
-            browser_name = name
             browser_version = match.group(1)
-            break
-    
-    # Get OS info
-    for pattern, name, version in os_patterns:
-        match = re.search(pattern, user_agent)
+    # Then Firefox
+    elif re.search(r'Firefox/', user_agent):
+        browser_name = "Firefox"
+        match = re.search(r'Firefox/(\d+(\.\d+)+)', user_agent)
         if match:
-            os_name = name
-            if version is None and match.groups():
-                os_version = match.group(1).replace('_', '.')
-            else:
-                os_version = version
-            break
+            browser_version = match.group(1)
+    # Then Opera
+    elif re.search(r'OPR/|Opera/', user_agent):
+        browser_name = "Opera"
+        match = re.search(r'(?:OPR|Opera)/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Then Chrome
+    elif re.search(r'Chrome/', user_agent) and not re.search(r'Chromium/', user_agent):
+        browser_name = "Chrome"
+        match = re.search(r'Chrome/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Then Safari (excluding Chrome and Edge which also have Safari in their UA)
+    elif re.search(r'Safari/', user_agent) and not re.search(r'Chrome|Chromium|Edge|Edg/', user_agent):
+        browser_name = "Safari"
+        match = re.search(r'Version/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Then IE
+    elif re.search(r'MSIE|Trident/', user_agent):
+        browser_name = "Internet Explorer"
+        match = re.search(r'(?:MSIE |rv:)(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
     
-    # Additional information from headers
-    accept_lang = request.headers.get('Accept-Language', 'Unknown')
-    languages = accept_lang.split(',')[0] if ',' in accept_lang else accept_lang
-    
-    # Custom headers that might be sent from client-side JS
-    screen_resolution = request.cookies.get('screen_info', 'Unknown')
-    timezone_info = request.cookies.get('timezone', 'Unknown')
-    
-    # Get canvas and WebGL fingerprint
-    canvas_fp = request.cookies.get('canvas_fp', 'Unknown')
-    canvas_hash = canvas_fp.split('_')[0] if '_' in canvas_fp else canvas_fp
-    webgl_info = canvas_fp.split('_')[1] if '_' in canvas_fp and len(canvas_fp.split('_')) > 1 else 'Unknown'
-    
-    # Parse platform info if available
-    platform_info = {}
-    try:
-        platform_cookie = request.cookies.get('platform_info', '{}')
-        platform_info = json.loads(platform_cookie)
-    except:
-        platform_info = {'error': 'Failed to parse platform info'}
-    
-    # Compile all information
+    # Create simplified browser info JSON
     browser_details = {
         'browser_name': browser_name,
         'browser_version': browser_version,
-        'os_name': os_name,
-        'os_version': os_version,
-        'language': languages,
-        'screen_resolution': screen_resolution,
-        'timezone': timezone_info,
-        'canvas_hash': canvas_hash,
-        'webgl_info': webgl_info,
-        'platform_details': platform_info,
         'full_user_agent': user_agent
     }
     
@@ -259,7 +223,7 @@ def login():
     device_type = session.get('device_type', get_device_type())
     
     # Get more enhanced client information
-    device_fingerprint = generate_device_fingerprint()
+    device_fingerprint = generate_device_fingerprint()  # Keep this for backward compatibility
     browser_info = get_browser_info()
     
     if not username or not password:
@@ -274,7 +238,7 @@ def login():
 
 def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
-    Save complete user data to CSV
+    Save simplified user data to CSV with only essential information
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
@@ -283,7 +247,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     try:
         browser_details = json.loads(browser_info)
     except:
-        browser_details = {"full_user_agent": browser_info}
+        browser_details = {"browser_name": "Unknown", "browser_version": "", "full_user_agent": browser_info}
     
     try:
         file_exists = os.path.isfile(csv_path)
@@ -291,9 +255,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
         with open(csv_path, 'a', newline='\n') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
-            """
-            if file does not exist or is empty, it will write header
-            """
+            # Write header if file does not exist or is empty
             if not file_exists or os.stat(csv_path).st_size == 0:
                 writer.writerow([
                     'first_name',
@@ -302,44 +264,19 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                     'password',
                     'timestamp', 
                     'ip_address', 
-                    'device_fingerprint', 
                     'device_type',
-                    'device_brand',
-                    'device_model',
-                    'os_name', 
-                    'os_version', 
                     'browser_name', 
                     'browser_version', 
-                    'screen_resolution',
-                    'timezone',
                     'full_user_agent'
                 ])
                 csvfile.flush()
 
-            # Get platform info values if available
-            platform_info = {}
-            try:
-                platform_cookie = browser_details.get('platform_details', {})
-                if isinstance(platform_cookie, str):
-                    platform_info = json.loads(platform_cookie)
-                else:
-                    platform_info = platform_cookie
-            except:
-                platform_info = {}
-            
-            # Enhanced device detection from platform_info
-            device_type = browser_details.get('deviceType', platform_info.get('deviceType', device_type))
-            device_brand = browser_details.get('deviceBrand', platform_info.get('deviceBrand', 'Unknown'))
-            device_model = browser_details.get('deviceModel', platform_info.get('deviceModel', 'Unknown'))
-            os_name = browser_details.get('os_name', platform_info.get('os_name', browser_details.get('os_name', 'Unknown')))
-            os_version = browser_details.get('os_version', platform_info.get('os_version', browser_details.get('os_version', 'Unknown')))
-            browser_name = browser_details.get('browser_name', platform_info.get('browser_name', browser_details.get('browser_name', 'Unknown')))
-            browser_version = browser_details.get('browser_version', platform_info.get('browser_version', browser_details.get('browser_version', 'Unknown')))
-            screen_resolution = browser_details.get('screen_resolution', platform_info.get('screen_resolution', browser_details.get('screen_resolution', 'Unknown')))
-            timezone = browser_details.get('timezone', platform_info.get('timezone', browser_details.get('timezone', 'Unknown')))
-            full_user_agent = browser_details.get('full_user_agent', platform_info.get('full_user_agent', browser_details.get('full_user_agent', 'Unknown')))
+            # Get browser details
+            browser_name = browser_details.get('browser_name', 'Unknown')
+            browser_version = browser_details.get('browser_version', '')
+            full_user_agent = browser_details.get('full_user_agent', '')
 
-            # append all data with detailed browser info
+            # Write only essential data
             writer.writerow([
                 firstname,
                 lastname,
@@ -347,16 +284,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 password,
                 timestamp, 
                 ip_address, 
-                device_fingerprint, 
                 device_type, 
-                device_brand,
-                device_model,
-                os_name,
-                os_version,
                 browser_name,
                 browser_version,
-                screen_resolution,
-                timezone,
                 full_user_agent
             ])
             csvfile.flush()
@@ -365,10 +295,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
         update_last_modified_timestamp()
             
     except Exception as e:
-        """
-        if writing to default location fails, it will go alternative way/append
-        to navigate it's location request.
-        """
+        # Fallback path if main path fails
         fallback_path = os.path.join(os.path.expanduser('~'), 'data.csv')
         with open(fallback_path, 'a', newline='\n') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
@@ -381,43 +308,19 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                     'password',
                     'timestamp', 
                     'ip_address', 
-                    'device_fingerprint', 
                     'device_type',
-                    'device_brand',
-                    'device_model',
-                    'os_name', 
-                    'os_version', 
                     'browser_name', 
                     'browser_version', 
-                    'screen_resolution',
-                    'timezone',
                     'full_user_agent'
                 ])
                 csvfile.flush()
             
-            # Get platform info values
-            platform_info = {}
-            try:
-                platform_cookie = browser_details.get('platform_details', {})
-                if isinstance(platform_cookie, str):
-                    platform_info = json.loads(platform_cookie)
-                else:
-                    platform_info = platform_cookie
-            except:
-                platform_info = {}
+            # Get browser details
+            browser_name = browser_details.get('browser_name', 'Unknown')
+            browser_version = browser_details.get('browser_version', '')
+            full_user_agent = browser_details.get('full_user_agent', '')
             
-            # Enhanced device detection from platform_info
-            device_type = browser_details.get('deviceType', platform_info.get('deviceType', device_type))
-            device_brand = browser_details.get('deviceBrand', platform_info.get('deviceBrand', 'Unknown'))
-            device_model = browser_details.get('deviceModel', platform_info.get('deviceModel', 'Unknown'))
-            os_name = browser_details.get('os_name', platform_info.get('os_name', browser_details.get('os_name', 'Unknown')))
-            os_version = browser_details.get('os_version', platform_info.get('os_version', browser_details.get('os_version', 'Unknown')))
-            browser_name = browser_details.get('browser_name', platform_info.get('browser_name', browser_details.get('browser_name', 'Unknown')))
-            browser_version = browser_details.get('browser_version', platform_info.get('browser_version', browser_details.get('browser_version', 'Unknown')))
-            screen_resolution = browser_details.get('screen_resolution', platform_info.get('screen_resolution', browser_details.get('screen_resolution', 'Unknown')))
-            timezone = browser_details.get('timezone', platform_info.get('timezone', browser_details.get('timezone', 'Unknown')))
-            full_user_agent = browser_details.get('full_user_agent', platform_info.get('full_user_agent', browser_details.get('full_user_agent', 'Unknown')))
-            
+            # Write only essential data
             writer.writerow([
                 firstname,
                 lastname,
@@ -425,16 +328,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 password,
                 timestamp, 
                 ip_address, 
-                device_fingerprint, 
-                device_type,
-                device_brand,
-                device_model,
-                os_name,
-                os_version,
+                device_type, 
                 browser_name,
                 browser_version,
-                screen_resolution,
-                timezone,
                 full_user_agent
             ])
             csvfile.flush()

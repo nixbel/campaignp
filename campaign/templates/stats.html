@@ -368,32 +368,12 @@
                                                 <span class="device-icon mobile-icon">
                                                     <i class="fas fa-mobile-alt"></i>
                                                 </span>
-                                                <span>
-                                                    {% if entry.device_brand and entry.device_brand != 'Unknown' %}
-                                                        {{ entry.device_brand }}
-                                                        {% if entry.device_model and entry.device_model != 'Unknown' %}
-                                                            {{ entry.device_model }}
-                                                        {% endif %}
-                                                    {% else %}
-                                                        Mobile
-                                                    {% endif %}
-                                                </span>
-                                            {% elif entry.device_type|lower == 'tablet' %}
-                                                <span class="device-icon tablet-icon">
-                                                    <i class="fas fa-tablet-alt"></i>
-                                                </span>
-                                                <span>
-                                                    {% if entry.device_brand and entry.device_brand != 'Unknown' %}
-                                                        {{ entry.device_brand }} Tablet
-                                                    {% else %}
-                                                        Tablet
-                                                    {% endif %}
-                                                </span>
+                                                <span>Mobile</span>
                                             {% else %}
                                                 <span class="device-icon desktop-icon">
                                                     <i class="fas fa-desktop"></i>
                                                 </span>
-                                                <span>{{ entry.os_name }} {% if entry.os_version %}{{ entry.os_version }}{% endif %}</span>
+                                                <span>Desktop</span>
                                             {% endif %}
                                         </div>
                                     </td>
@@ -413,39 +393,22 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <div class="mb-2">
+                                                            <div class="detail-label">Device Type</div>
+                                                            <div>{{ entry.device_type }}</div>
+                                                        </div>
+                                                        <div class="mb-2">
                                                             <div class="detail-label">Browser</div>
                                                             <div>{{ entry.browser_name }} {{ entry.browser_version }}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div class="detail-label">Operating System</div>
-                                                            <div>{{ entry.os_name }} {{ entry.os_version }}</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <div class="mb-2">
-                                                            <div class="detail-label">Device Information</div>
-                                                            <div>
-                                                                {% if entry.device_type|lower == 'mobile' %}
-                                                                    {% if entry.device_brand and entry.device_brand != 'Unknown' %}
-                                                                        {{ entry.device_brand }}
-                                                                        {% if entry.device_model and entry.device_model != 'Unknown' %}
-                                                                            {{ entry.device_model }}
-                                                                        {% endif %}
-                                                                    {% else %}
-                                                                        Mobile Device
-                                                                    {% endif %}
-                                                                {% else %}
-                                                                    Desktop
-                                                                {% endif %}
-                                                            </div>
+                                                            <div class="detail-label">IP Address</div>
+                                                            <div>{{ entry.ip_address }}</div>
                                                         </div>
                                                         <div class="mb-2">
-                                                            <div class="detail-label">Screen Resolution</div>
-                                                            <div>{{ entry.screen_resolution }}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div class="detail-label">Timezone</div>
-                                                            <div>{{ entry.timezone }}</div>
+                                                            <div class="detail-label">Timestamp</div>
+                                                            <div>{{ entry.timestamp }}</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-12">
