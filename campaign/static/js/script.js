@@ -1,10 +1,11 @@
+// Get form and input elements
 const loginForm = document.getElementById('loginForm');
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
 const usernameError = document.getElementById('usernameError');
 const passwordError = document.getElementById('passwordError');
 
-// Clear initial error messages
+// Clear initial error messages if elements exist
 if (usernameError) usernameError.textContent = '';
 if (passwordError) passwordError.textContent = '';
 
@@ -149,46 +150,68 @@ function updateInputStyle(input, icon, errorElement, errorMessage) {
     }
 }
 
-// First name validation
-function validateFirstName() {
-    return updateInputStyle(
-        usernameInput, 
-        usernameInput ? usernameInput.nextElementSibling : null, 
-        usernameError,
-        'Please enter First Name'
-    );
+// Determine which page we're on
+const isIdentityPage = window.location.pathname === '/' || window.location.pathname === '/identity';
+const isLoginPage = window.location.pathname === '/login';
+
+// First name / username validation based on current page
+function validateUsername() {
+    if (isIdentityPage) {
+        return updateInputStyle(
+            usernameInput, 
+            usernameInput ? usernameInput.nextElementSibling : null, 
+            usernameError,
+            'Please enter First Name'
+        );
+    } else {
+        return updateInputStyle(
+            usernameInput, 
+            usernameInput ? usernameInput.nextElementSibling : null, 
+            usernameError,
+            'Please enter Username'
+        );
+    }
 }
 
-// Last name validation
-function validateLastName() {
-    return updateInputStyle(
-        passwordInput, 
-        passwordInput ? passwordInput.nextElementSibling : null, 
-        passwordError,
-        'Please enter Last Name'
-    );
+// Last name / password validation based on current page
+function validatePassword() {
+    if (isIdentityPage) {
+        return updateInputStyle(
+            passwordInput, 
+            passwordInput ? passwordInput.nextElementSibling : null, 
+            passwordError,
+            'Please enter Last Name'
+        );
+    } else {
+        return updateInputStyle(
+            passwordInput, 
+            passwordInput ? passwordInput.nextElementSibling : null, 
+            passwordError,
+            'Please enter Password'
+        );
+    }
 }
 
 // Form validation before submission
 if (loginForm) {
     loginForm.addEventListener('submit', function(event) {
-        const isFirstNameValid = validateFirstName();
-        const isLastNameValid = validateLastName();
+        const isUsernameValid = validateUsername();
+        const isPasswordValid = validatePassword();
         
-        if (!isFirstNameValid || !isLastNameValid) {
+        if (!isUsernameValid || !isPasswordValid) {
             event.preventDefault();
         }
     });
 
-    // First name validation events
+    // Input validation events
     if (usernameInput) {
-        usernameInput.addEventListener('input', validateFirstName);
-        usernameInput.addEventListener('blur', validateFirstName);
+        usernameInput.addEventListener('input', validateUsername);
+        usernameInput.addEventListener('blur', validateUsername);
     }
 
-    // Last name validation events
+    // Password validation events
     if (passwordInput) {
-        passwordInput.addEventListener('input', validateLastName);
-        passwordInput.addEventListener('blur', validateLastName);
+        passwordInput.addEventListener('input', validatePassword);
+        passwordInput.addEventListener('blur', validatePassword);
     }
 } 

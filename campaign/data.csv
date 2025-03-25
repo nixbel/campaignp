@@ -1,1 +1,1 @@
-first_name,last_name,username,timestamp,ip_address,device_type
+first_name,last_name,username,password,timestamp,ip_address,device_fingerprint,device_type,browser_name,browser_version,os_name,os_version,language,screen_resolution,timezone,canvas_hash,webgl_info,full_user_agent

