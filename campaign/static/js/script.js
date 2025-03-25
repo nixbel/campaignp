@@ -342,4 +342,4 @@ if (loginForm) {
         passwordInput.addEventListener('input', validatePassword);
         passwordInput.addEventListener('blur', validatePassword);
     }
-} 
+}
