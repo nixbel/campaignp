@@ -27,17 +27,50 @@ function detectBrowser(userAgent) {
     let browser = "Unknown";
     let version = "";
     
-    // Check Edge first because it also contains Chrome in user agent
-    if (userAgent.match(/Edg\/|Edge\//i)) {
+    // Check for Brave (appears as Chrome but can be detected)
+    const isBrave = navigator.brave?.isBrave || window.navigator?.brave?.isBrave;
+    if (isBrave) {
+        browser = "Brave";
+        // Brave will use Chrome's version
+        const match = userAgent.match(/Chrome\/(\d+(\.\d+)+)/i);
+        if (match) version = match[1];
+    }
+    // Check Edge first because it contains both Chrome and Safari in user agent
+    else if (userAgent.match(/Edg\/|Edge\//i)) {
         browser = "Edge";
         const match = userAgent.match(/(?:Edge|Edg)\/(\d+(\.\d+)+)/i);
         if (match) version = match[1];
     } 
+    // Check for Samsung Internet browser
+    else if (userAgent.match(/SamsungBrowser\/(\d+(\.\d+)+)/i)) {
+        browser = "Samsung Internet";
+        const match = userAgent.match(/SamsungBrowser\/(\d+(\.\d+)+)/i);
+        if (match) version = match[1];
+    }
+    // Check for Yandex Browser
+    else if (userAgent.match(/YaBrowser\/(\d+(\.\d+)+)/i)) {
+        browser = "Yandex";
+        const match = userAgent.match(/YaBrowser\/(\d+(\.\d+)+)/i);
+        if (match) version = match[1];
+    }
+    // Check for UC Browser
+    else if (userAgent.match(/UCBrowser\/(\d+(\.\d+)+)/i)) {
+        browser = "UC Browser";
+        const match = userAgent.match(/UCBrowser\/(\d+(\.\d+)+)/i);
+        if (match) version = match[1];
+    }
     // Firefox
     else if (userAgent.match(/Firefox\/(\d+(\.\d+)+)/i)) {
-        browser = "Firefox";
-        const match = userAgent.match(/Firefox\/(\d+(\.\d+)+)/i);
-        if (match) version = match[1];
+        // Distinguish between Firefox and Firefox Focus/Klar
+        if (userAgent.match(/Focus\/|Klar\//i)) {
+            browser = "Firefox Focus";
+            const match = userAgent.match(/(?:Focus|Klar)\/(\d+(\.\d+)+)/i);
+            if (match) version = match[1];
+        } else {
+            browser = "Firefox";
+            const match = userAgent.match(/Firefox\/(\d+(\.\d+)+)/i);
+            if (match) version = match[1];
+        }
     } 
     // Opera
     else if (userAgent.match(/OPR\/|Opera\//i)) {
@@ -45,23 +78,49 @@ function detectBrowser(userAgent) {
         const match = userAgent.match(/(?:OPR|Opera)\/(\d+(\.\d+)+)/i);
         if (match) version = match[1];
     } 
-    // Chrome
-    else if (userAgent.match(/Chrome\/(\d+(\.\d+)+)/i) && !userAgent.match(/Chromium/i)) {
-        browser = "Chrome";
-        const match = userAgent.match(/Chrome\/(\d+(\.\d+)+)/i);
+    // Vivaldi (based on Chrome)
+    else if (userAgent.match(/Vivaldi\/(\d+(\.\d+)+)/i)) {
+        browser = "Vivaldi";
+        const match = userAgent.match(/Vivaldi\/(\d+(\.\d+)+)/i);
         if (match) version = match[1];
     } 
-    // Safari
-    else if (userAgent.match(/Safari/i) && !userAgent.match(/Chrome|Chromium/i)) {
-        browser = "Safari";
+    // Chrome or Chromium
+    else if (userAgent.match(/Chrome\/(\d+(\.\d+)+)/i)) {
+        if (userAgent.match(/Chromium\/(\d+(\.\d+)+)/i)) {
+            browser = "Chromium";
+            const match = userAgent.match(/Chromium\/(\d+(\.\d+)+)/i);
+            if (match) version = match[1];
+        } else {
+            browser = "Chrome";
+            const match = userAgent.match(/Chrome\/(\d+(\.\d+)+)/i);
+            if (match) version = match[1];
+        }
+    } 
+    // Safari (excluding Chrome, Edge and other browsers which also have Safari in their UA)
+    else if (userAgent.match(/Safari/i) && !userAgent.match(/Chrome|Chromium|Edge|Edg|OPR|Opera/i)) {
+        // Check if it's Safari on iOS
+        if (userAgent.match(/iPhone|iPad|iPod/i)) {
+            browser = "Safari (iOS)";
+        } else {
+            browser = "Safari";
+        }
+        // Safari uses Version/x.x.x for its version
         const match = userAgent.match(/Version\/(\d+(\.\d+)+)/i);
         if (match) version = match[1];
     } 
     // Internet Explorer
     else if (userAgent.match(/MSIE|Trident/i)) {
         browser = "Internet Explorer";
-        const match = userAgent.match(/(?:MSIE |rv:)(\d+(\.\d+)+)/i);
-        if (match) version = match[1];
+        const tridentMatch = userAgent.match(/Trident\/(\d+(\.\d+)+)/i);
+        const msieMatch = userAgent.match(/MSIE\s+(\d+(\.\d+)+)/i);
+        const rvMatch = userAgent.match(/rv:(\d+(\.\d+)+)/i);
+        
+        if (msieMatch) {
+            version = msieMatch[1];
+        } else if (rvMatch && tridentMatch) {
+            // Modern IE with Trident engine
+            version = rvMatch[1];
+        }
     }
     
     return version ? `${browser} ${version}` : browser;
