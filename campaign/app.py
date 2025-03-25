@@ -156,5 +156,3 @@ if __name__ == '__main__':
         port=5000,       # You can change this port if needed. do not remove for handling port.
         debug=False      # set to False for production. do not remove this.
     ) 
-
-    #im cute
