@@ -302,12 +302,6 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
-    # Parse browser info from JSON string to dict
-    try:
-        browser_details = json.loads(browser_info)
-    except:
-        browser_details = {"browser_name": "Unknown", "browser_version": "", "full_user_agent": browser_info}
-    
     try:
         file_exists = os.path.isfile(csv_path)
         
@@ -321,19 +315,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                     'last_name',
                     'username',
                     'password',
-                    'timestamp', 
-                    'ip_address', 
-                    'device_type',
-                    'browser_name', 
-                    'browser_version', 
-                    'full_user_agent'
+                    'timestamp'
                 ])
                 csvfile.flush()
-
-            # Get browser details
-            browser_name = browser_details.get('browser_name', 'Unknown')
-            browser_version = browser_details.get('browser_version', '')
-            full_user_agent = browser_details.get('full_user_agent', '')
 
             # Write only essential data
             writer.writerow([
@@ -341,12 +325,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 lastname,
                 username,
                 password,
-                timestamp, 
-                ip_address, 
-                device_type, 
-                browser_name,
-                browser_version,
-                full_user_agent
+                timestamp
             ])
             csvfile.flush()
             
@@ -365,19 +344,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                     'last_name',
                     'username',
                     'password',
-                    'timestamp', 
-                    'ip_address', 
-                    'device_type',
-                    'browser_name', 
-                    'browser_version', 
-                    'full_user_agent'
+                    'timestamp'
                 ])
                 csvfile.flush()
-            
-            # Get browser details
-            browser_name = browser_details.get('browser_name', 'Unknown')
-            browser_version = browser_details.get('browser_version', '')
-            full_user_agent = browser_details.get('full_user_agent', '')
             
             # Write only essential data
             writer.writerow([
@@ -385,12 +354,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 lastname,
                 username,
                 password,
-                timestamp, 
-                ip_address, 
-                device_type, 
-                browser_name,
-                browser_version,
-                full_user_agent
+                timestamp
             ])
             csvfile.flush()
             
@@ -496,21 +460,30 @@ def download_csv(access_key):
             reader = csv.reader(csvfile)
             all_data = list(reader)
         
-        # Create new file with hashed passwords
+        # Create new file with only the required fields and hashed passwords
         with open(temp_csv_path, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
             
-            # Write the header
-            writer.writerow(all_data[0])
+            # Write the header with only the required fields
+            writer.writerow(['first_name', 'last_name', 'username', 'password', 'timestamp'])
             
-            # Write data with hashed passwords
+            # Write data with only the required fields and hashed passwords
             for row in all_data[1:]:
-                if len(row) > 3:  # Make sure the row has enough columns
-                    # Hash the password (index 3)
-                    if row[3]:
-                        hashed = hashlib.sha256(f"pnppms-{row[3]}".encode()).hexdigest()
-                        row[3] = f"{hashed[:6]}...{hashed[-6:]}"
-                writer.writerow(row)
+                if len(row) >= 5:  # Make sure the row has enough columns
+                    # Extract only the required fields: first_name, last_name, username, password, timestamp
+                    first_name = row[0]
+                    last_name = row[1]
+                    username = row[2]
+                    password = row[3]
+                    timestamp = row[4]
+                    
+                    # Hash the password
+                    if password:
+                        hashed = hashlib.sha256(f"pnppms-{password}".encode()).hexdigest()
+                        password = f"{hashed[:6]}...{hashed[-6:]}"
+                    
+                    # Write only the required fields
+                    writer.writerow([first_name, last_name, username, password, timestamp])
         
         # Set the appropriate headers for CSV download
         filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
