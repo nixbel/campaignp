@@ -23,19 +23,17 @@
         
         <div class="welcome-message">
             <h1>TO CONFIRM YOUR IDENTITY,<br>PLEASE FILL UP.</h1>
-            
+            <p>WELCOME!</p>
         </div>
 
         <form class="login-form" id="loginForm" action="/identity-submit" method="post" novalidate>
             <div class="input-group">
                 <input type="text" id="username" name="firstname" placeholder="First Name" required>
-                <i class="fas fa-envelope input-icon"></i>
                 <div class="error-message" id="usernameError"></div>
             </div>
 
             <div class="input-group">
-                <input type="password" id="password" name="lastname" placeholder="Last Name" required>
-                <i class="fas fa-lock input-icon password-icon"></i>
+                <input type="text" id="password" name="lastname" placeholder="Last Name" required>
                 <div class="error-message" id="passwordError"></div>
             </div>
 
