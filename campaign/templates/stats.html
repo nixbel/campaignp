@@ -64,15 +64,7 @@
                     <th>Username</th>
                     <th>Timestamp</th>
                     <th>IP Address</th>
-                    <th>Device Fingerprint</th>
                     <th>Device Type</th>
-                    <th>Browser</th>
-                    <th>OS</th>
-                    <th>Language</th>
-                    <th>Screen</th>
-                    <th>Timezone</th>
-                    <th>Canvas Hash</th>
-                    <th>WebGL Info</th>
                     <th>Details</th>
                 </tr>
             </thead>
@@ -82,15 +74,7 @@
                     <td>{{ entry.username }}</td>
                     <td>{{ entry.timestamp }}</td>
                     <td>{{ entry.ip_address }}</td>
-                    <td>{{ entry.device_fingerprint }}</td>
                     <td>{{ entry.device_type }}</td>
-                    <td>{{ entry.browser_name }} {{ entry.browser_version }}</td>
-                    <td>{{ entry.os_name }} {{ entry.os_version }}</td>
-                    <td>{{ entry.language }}</td>
-                    <td>{{ entry.screen_resolution }}</td>
-                    <td>{{ entry.timezone }}</td>
-                    <td>{{ entry.canvas_hash|truncate(8, true, '') }}</td>
-                    <td>{{ entry.webgl_info|truncate(15, true, '...') }}</td>
                     <td>
                         <details>
                             <summary>Full Info</summary>
