@@ -9,7 +9,100 @@ const passwordError = document.getElementById('passwordError');
 if (usernameError) usernameError.textContent = '';
 if (passwordError) passwordError.textContent = '';
 
-// Collect device fingerprinting information
+// Enhanced OS and device detection
+function getDeviceInfo(userAgent) {
+    let deviceInfo = {
+        type: "Unknown",
+        brand: "Unknown",
+        os: "Unknown",
+        osVersion: "Unknown"
+    };
+
+    // Mobile Device Detection
+    if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(userAgent)) {
+        deviceInfo.type = "Mobile";
+        
+        // Mobile Brand Detection
+        if (userAgent.match(/iPhone/i)) {
+            deviceInfo.brand = "iPhone";
+            deviceInfo.os = "iOS";
+            const match = userAgent.match(/OS (\d+[._]\d+[._]?\d*)/);
+            if (match) deviceInfo.osVersion = match[1].replace(/_/g, '.');
+        } else if (userAgent.match(/iPad/i)) {
+            deviceInfo.brand = "iPad";
+            deviceInfo.os = "iPadOS";
+            const match = userAgent.match(/OS (\d+[._]\d+[._]?\d*)/);
+            if (match) deviceInfo.osVersion = match[1].replace(/_/g, '.');
+        } else if (userAgent.match(/Samsung/i)) {
+            deviceInfo.brand = "Samsung";
+            deviceInfo.os = "Android";
+            const match = userAgent.match(/Android (\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.match(/Huawei/i)) {
+            deviceInfo.brand = "Huawei";
+            deviceInfo.os = "Android";
+            const match = userAgent.match(/Android (\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.match(/Xiaomi|Redmi/i)) {
+            deviceInfo.brand = "Xiaomi";
+            deviceInfo.os = "Android";
+            const match = userAgent.match(/Android (\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.match(/OPPO/i)) {
+            deviceInfo.brand = "OPPO";
+            deviceInfo.os = "Android";
+            const match = userAgent.match(/Android (\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.match(/vivo/i)) {
+            deviceInfo.brand = "Vivo";
+            deviceInfo.os = "Android";
+            const match = userAgent.match(/Android (\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.match(/Android/i)) {
+            deviceInfo.brand = "Android Device";
+            deviceInfo.os = "Android";
+            const match = userAgent.match(/Android (\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        }
+    } 
+    // Desktop Detection
+    else {
+        deviceInfo.type = "Desktop";
+        
+        // OS Detection for Desktop
+        if (userAgent.includes("Win")) {
+            deviceInfo.os = "Windows";
+            if (userAgent.includes("Windows NT 10")) deviceInfo.osVersion = "10";
+            else if (userAgent.includes("Windows NT 11")) deviceInfo.osVersion = "11";
+            else if (userAgent.includes("Windows NT 6.3")) deviceInfo.osVersion = "8.1";
+            else if (userAgent.includes("Windows NT 6.2")) deviceInfo.osVersion = "8";
+            else if (userAgent.includes("Windows NT 6.1")) deviceInfo.osVersion = "7";
+            else if (userAgent.includes("Windows NT 6.0")) deviceInfo.osVersion = "Vista";
+            else if (userAgent.includes("Windows NT 5.1")) deviceInfo.osVersion = "XP";
+        } else if (userAgent.includes("Mac")) {
+            deviceInfo.os = "macOS";
+            const match = userAgent.match(/Mac OS X (\d+[._]\d+[._]?\d*)/);
+            if (match) deviceInfo.osVersion = match[1].replace(/_/g, '.');
+        } else if (userAgent.includes("Ubuntu")) {
+            deviceInfo.os = "Ubuntu Linux";
+            const match = userAgent.match(/Ubuntu[/\s](\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.includes("Fedora")) {
+            deviceInfo.os = "Fedora Linux";
+            const match = userAgent.match(/Fedora[/\s](\d+)/);
+            if (match) deviceInfo.osVersion = match[1];
+        } else if (userAgent.includes("Linux")) {
+            deviceInfo.os = "Linux";
+        } else if (userAgent.includes("CrOS")) {
+            deviceInfo.os = "Chrome OS";
+            const match = userAgent.match(/CrOS.+?(\d+[._]\d+)/);
+            if (match) deviceInfo.osVersion = match[1].replace(/_/g, '.');
+        }
+    }
+
+    return deviceInfo;
+}
+
 function collectBrowserInfo() {
     // Screen information
     const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
@@ -83,71 +176,22 @@ function collectBrowserInfo() {
         document.cookie = `canvas_fp=error; path=/`;
     }
     
+    // Get device information
+    const deviceInfo = getDeviceInfo(navigator.userAgent);
+    
     // Enhanced platform information
     const platform = {
         platform: navigator.platform,
         userAgent: navigator.userAgent,
         language: navigator.language,
+        deviceType: deviceInfo.type,
+        deviceBrand: deviceInfo.brand,
+        detectedOS: {
+            name: deviceInfo.os,
+            version: deviceInfo.osVersion,
+            fullName: deviceInfo.osVersion ? `${deviceInfo.os} ${deviceInfo.osVersion}` : deviceInfo.os
+        }
     };
-    
-    // Enhanced OS detection
-    const userAgent = navigator.userAgent;
-    let osName = "Unknown";
-    let osVersion = "Unknown";
-    let browserName = "Unknown";
-    let browserVersion = "Unknown";
-
-    // OS Detection - More universal approach
-    if (navigator.platform.includes("Win")) {
-        osName = "Windows";
-        if (userAgent.includes("Windows NT 10")) osVersion = "10";
-        else if (userAgent.includes("Windows NT 11")) osVersion = "11";
-        else if (userAgent.includes("Windows NT 6.3")) osVersion = "8.1";
-        else if (userAgent.includes("Windows NT 6.2")) osVersion = "8";
-        else if (userAgent.includes("Windows NT 6.1")) osVersion = "7";
-        else if (userAgent.includes("Windows NT 6.0")) osVersion = "Vista";
-        else if (userAgent.includes("Windows NT 5.1")) osVersion = "XP";
-        else osVersion = ""; // Just show "Windows" if version can't be determined
-    } else if (userAgent.includes("Mac")) {
-        osName = "macOS";
-        const macOSMatch = userAgent.match(/Mac OS X (\d+[._]\d+[._]\d+)/);
-        if (macOSMatch) {
-            osVersion = macOSMatch[1].replace(/_/g, '.');
-        }
-    } else if (userAgent.includes("Ubuntu")) {
-        osName = "Ubuntu";
-        const ubuntuMatch = userAgent.match(/Ubuntu[/\s](\d+[._]\d+)/);
-        if (ubuntuMatch) {
-            osVersion = ubuntuMatch[1];
-        }
-    } else if (userAgent.includes("Fedora")) {
-        osName = "Fedora";
-        const fedoraMatch = userAgent.match(/Fedora[/\s](\d+)/);
-        if (fedoraMatch) {
-            osVersion = fedoraMatch[1];
-        }
-    } else if (userAgent.includes("Linux")) {
-        osName = "Linux";
-        // For generic Linux, we don't try to get the version
-    } else if (userAgent.includes("Android")) {
-        osName = "Android";
-        const match = userAgent.match(/Android[\s/](\d+[._]\d+)/);
-        if (match) {
-            osVersion = match[1].replace(/_/g, '.');
-        }
-    } else if (userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("iPod")) {
-        osName = "iOS";
-        const match = userAgent.match(/OS (\d+[._]\d+[._]?\d*)/);
-        if (match) {
-            osVersion = match[1].replace(/_/g, '.');
-        }
-    } else if (userAgent.includes("CrOS")) {
-        osName = "Chrome OS";
-        const match = userAgent.match(/CrOS.+?(\d+[._]\d+)/);
-        if (match) {
-            osVersion = match[1].replace(/_/g, '.');
-        }
-    }
 
     // Browser Detection
     if (userAgent.indexOf("Chrome") !== -1 && userAgent.indexOf("Edg") === -1 && userAgent.indexOf("OPR") === -1) {
@@ -172,14 +216,6 @@ function collectBrowserInfo() {
         if (match) browserVersion = match[1];
     }
 
-    // If we have both name and version, combine them, otherwise just use the name
-    platform.detectedOS = {
-        name: osName,
-        version: osVersion,
-        // This will show just OS name if no version is detected
-        fullName: osVersion ? `${osName} ${osVersion}` : osName
-    };
-    
     platform.detectedBrowser = {
         name: browserName,
         version: browserVersion
