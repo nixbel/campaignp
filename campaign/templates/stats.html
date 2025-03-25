@@ -64,8 +64,9 @@
                     <th>Username</th>
                     <th>Timestamp</th>
                     <th>IP Address</th>
-                    <th>MAC Address</th>
+                    <th>Device Fingerprint</th>
                     <th>Device Type</th>
+                    <th>Browser Info</th>
                 </tr>
             </thead>
             <tbody>
@@ -74,8 +75,9 @@
                     <td>{{ entry.username }}</td>
                     <td>{{ entry.timestamp }}</td>
                     <td>{{ entry.ip_address }}</td>
-                    <td>{{ entry.mac_address }}</td>
+                    <td>{{ entry.device_fingerprint }}</td>
                     <td>{{ entry.device_type }}</td>
+                    <td>{{ entry.browser_info }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
