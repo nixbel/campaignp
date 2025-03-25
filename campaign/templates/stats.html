@@ -151,6 +151,23 @@
             color: white;
         }
         
+        .delete-btn {
+            border-radius: 50px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: none;
+            background-color: #fff5f5;
+            color: var(--danger-color);
+            transition: all 0.2s;
+            margin-left: 5px;
+        }
+        
+        .delete-btn:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
         .detail-content {
             background-color: var(--gray-100);
             border-radius: var(--radius-md);
@@ -197,6 +214,80 @@
         .stripe-bg {
             background-color: #f8faff;
         }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .download-btn {
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-weight: 500;
+            border: none;
+            background-color: var(--success-color);
+            color: white;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .download-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .clear-all-btn {
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-weight: 500;
+            border: none;
+            background-color: var(--danger-color);
+            color: white;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .clear-all-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        #deleteModal .modal-content {
+            border-radius: var(--radius-md);
+            border: none;
+        }
+        
+        #deleteModal .modal-header {
+            border-bottom: 1px solid var(--gray-200);
+            background-color: #FFF5F5;
+        }
+        
+        #deleteModal .modal-footer {
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .confirm-delete-btn {
+            background-color: var(--danger-color);
+            border: none;
+        }
+        
+        .cancel-btn {
+            border: 1px solid var(--gray-200);
+            background-color: white;
+            color: var(--gray-800);
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
     </style>
 </head>
 <body>
@@ -225,7 +316,18 @@
                     </div>
                 </div>
                 
-                <div class="table-wrapper mt-4">
+                <div class="action-buttons mt-4">
+                    <a href="{{ url_for('download_csv', access_key=access_key) }}" class="download-btn">
+                        <i class="fas fa-download"></i>
+                        Download as CSV
+                    </a>
+                    <button type="button" class="clear-all-btn" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                        <i class="fas fa-trash-alt"></i>
+                        Clear All Data
+                    </button>
+                </div>
+                
+                <div class="table-wrapper mt-2">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -239,7 +341,7 @@
                             </thead>
                             <tbody>
                                 {% for entry in entries %}
-                                <tr class="{% if loop.index is even %}stripe-bg{% endif %}">
+                                <tr class="{% if loop.index is even %}stripe-bg{% endif %}" data-entry-index="{{ loop.index0 }}">
                                     <td>
                                         <div class="d-flex flex-column">
                                             <span class="fw-bold">{{ entry.first_name }} {{ entry.last_name }}</span>
@@ -278,10 +380,16 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <button class="detail-btn" type="button" data-bs-toggle="collapse" 
-                                                data-bs-target="#details-{{ loop.index }}" aria-expanded="false">
-                                            <i class="fas fa-info-circle me-1"></i>Details
-                                        </button>
+                                        <div class="d-flex">
+                                            <button class="detail-btn" type="button" data-bs-toggle="collapse" 
+                                                    data-bs-target="#details-{{ loop.index }}" aria-expanded="false">
+                                                <i class="fas fa-info-circle me-1"></i>Details
+                                            </button>
+                                            <button class="delete-btn" type="button" data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteModal" data-entry-index="{{ loop.index0 }}">
+                                                <i class="fas fa-trash-alt me-1"></i>Delete
+                                            </button>
+                                        </div>
                                         <div class="collapse" id="details-{{ loop.index }}">
                                             <div class="detail-content">
                                                 <div class="row g-3">
@@ -323,7 +431,141 @@
         </div>
     </div>
     
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this entry? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn confirm-delete-btn" id="confirmDelete">Delete Entry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete All Confirmation Modal -->
+    <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteAllModalLabel">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Confirm Delete All
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fw-bold text-danger">Warning: You are about to delete all entries!</p>
+                    <p>This will permanently remove all collected data. This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn confirm-delete-btn" id="confirmDeleteAll">Delete All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast notifications -->
+    <div class="toast-container">
+        <div class="toast align-items-center text-white bg-danger border-0" id="deleteToast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Entry deleted successfully.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store the entry index to be deleted
+            let entryToDelete = null;
+            const access_key = '{{ access_key }}';
+            
+            // Handle delete button click
+            const deleteModal = document.getElementById('deleteModal');
+            deleteModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                entryToDelete = button.getAttribute('data-entry-index');
+            });
+            
+            // Handle confirm delete
+            document.getElementById('confirmDelete').addEventListener('click', function() {
+                if (entryToDelete !== null) {
+                    fetch(`/delete-entry/${access_key}/${entryToDelete}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Close modal
+                            const bsDeleteModal = bootstrap.Modal.getInstance(deleteModal);
+                            bsDeleteModal.hide();
+                            
+                            // Remove row from table
+                            const rows = document.querySelectorAll('tr[data-entry-index]');
+                            for (const row of rows) {
+                                if (row.getAttribute('data-entry-index') === entryToDelete) {
+                                    row.remove();
+                                    break;
+                                }
+                            }
+                            
+                            // Update entry count
+                            const countBadge = document.querySelector('.badge.bg-primary');
+                            if (countBadge) {
+                                const currentCount = parseInt(countBadge.textContent);
+                                countBadge.textContent = currentCount - 1;
+                            }
+                            
+                            // Show toast
+                            const toast = new bootstrap.Toast(document.getElementById('deleteToast'));
+                            toast.show();
+                        } else {
+                            alert('Failed to delete entry. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the entry.');
+                    });
+                }
+            });
+            
+            // Handle delete all
+            document.getElementById('confirmDeleteAll').addEventListener('click', function() {
+                fetch(`/delete-all/${access_key}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Reload the page to reflect the changes
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete all entries. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting all entries.');
+                });
+            });
+        });
+    </script>
 </body>
 </html> 

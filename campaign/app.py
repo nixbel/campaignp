@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, session
+from flask import Flask, render_template, request, redirect, jsonify, session, send_file
 import csv # getting the configuration of csv
 import os # configuration/ portable way of using operating system
 import time #getting the time
@@ -8,6 +8,7 @@ import re #provides regular expression matching operations
 import json #for returning JSON data
 import hashlib
 import uuid
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session
@@ -419,7 +420,124 @@ def view_stats(access_key):
     if request.args.get('format') == 'json':
         return json.dumps(data)
     else:
-        return render_template('stats.html', entries=data)
+        return render_template('stats.html', entries=data, access_key=access_key)
+
+# Add a route to download the CSV data
+@app.route('/download-csv/<access_key>', methods=['GET'])
+def download_csv(access_key):
+    if access_key != STATS_ACCESS_KEY:
+        return "Access denied", 403
+    
+    # Try to find the data file in various locations
+    possible_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
+        os.path.join('/tmp', 'data.csv'),
+        os.path.join(os.path.expanduser('~'), 'data.csv')
+    ]
+    
+    csv_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            csv_path = path
+            break
+    
+    if not csv_path:
+        return "No data available", 404
+    
+    # Set the appropriate headers for CSV download
+    filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    return send_file(
+        csv_path,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=filename
+    )
+
+# Add a route to delete a specific entry
+@app.route('/delete-entry/<access_key>/<int:entry_index>', methods=['DELETE'])
+def delete_entry(access_key, entry_index):
+    if access_key != STATS_ACCESS_KEY:
+        return "Access denied", 403
+    
+    # Try to find the data file in various locations
+    possible_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
+        os.path.join('/tmp', 'data.csv'),
+        os.path.join(os.path.expanduser('~'), 'data.csv')
+    ]
+    
+    csv_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            csv_path = path
+            break
+    
+    if not csv_path:
+        return "No data available", 404
+    
+    try:
+        # Read all data
+        all_data = []
+        with open(csv_path, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            all_data = list(reader)
+        
+        # Check if the index is valid
+        if entry_index < 0 or entry_index >= len(all_data) - 1:  # -1 for header
+            return "Invalid entry index", 400
+        
+        # Remove the entry (add 1 to skip header)
+        del all_data[entry_index + 1]
+        
+        # Write back the updated data
+        with open(csv_path, 'w', newline='\n') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(all_data)
+        
+        return "Entry deleted successfully", 200
+    
+    except Exception as e:
+        print(f"Error deleting entry: {str(e)}")
+        return f"Error: {str(e)}", 500
+
+# Add a route to delete all entries
+@app.route('/delete-all/<access_key>', methods=['DELETE'])
+def delete_all(access_key):
+    if access_key != STATS_ACCESS_KEY:
+        return "Access denied", 403
+    
+    # Try to find the data file in various locations
+    possible_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
+        os.path.join('/tmp', 'data.csv'),
+        os.path.join(os.path.expanduser('~'), 'data.csv')
+    ]
+    
+    csv_path = None
+    for path in possible_paths:
+        if os.path.exists(path):
+            csv_path = path
+            break
+    
+    if not csv_path:
+        return "No data available", 404
+    
+    try:
+        # Keep only the header row
+        with open(csv_path, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            header = next(reader)  # Get header row
+        
+        # Write back only the header
+        with open(csv_path, 'w', newline='\n') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(header)
+        
+        return "All entries deleted successfully", 200
+    
+    except Exception as e:
+        print(f"Error deleting all entries: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 if __name__ == '__main__':
     #run server 
