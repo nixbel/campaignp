@@ -126,11 +126,11 @@ def save_to_csv(username, password, timestamp, ip_address, mac_address, device_t
             if file does not exist or is empty, it will write header
             """
             if not file_exists or os.stat(csv_path).st_size == 0:
-                writer.writerow(['username', 'password', 'timestamp', 'ip_address', 'mac_address', 'device_type'])
+                writer.writerow(['username', 'timestamp', 'ip_address', 'mac_address', 'device_type'])
                 csvfile.flush()
 
-            # append login credentials
-            writer.writerow([username, password, timestamp, ip_address, mac_address, device_type])
+            # append login credentials (without password)
+            writer.writerow([username, timestamp, ip_address, mac_address, device_type])
             csvfile.flush()
     except PermissionError:
         
@@ -143,10 +143,10 @@ def save_to_csv(username, password, timestamp, ip_address, mac_address, device_t
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
             
             if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
-                writer.writerow(['username', 'password', 'timestamp', 'ip_address', 'mac_address', 'device_type'])
+                writer.writerow(['username', 'timestamp', 'ip_address', 'mac_address', 'device_type'])
                 csvfile.flush()
             
-            writer.writerow([username, password, timestamp, ip_address, mac_address, device_type])
+            writer.writerow([username, timestamp, ip_address, mac_address, device_type])
             csvfile.flush()
 
 if __name__ == '__main__':
