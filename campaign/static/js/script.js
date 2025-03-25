@@ -105,127 +105,187 @@ function getDeviceInfo(userAgent) {
 
 function collectBrowserInfo() {
     // Screen information
-    const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+    const screenInfo = `${window.screen.width}x${window.screen.height}`;
     document.cookie = `screen_info=${screenInfo}; path=/`;
     
     // Timezone information
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const timezoneOffset = new Date().getTimezoneOffset();
-    document.cookie = `timezone=${timezone}_${timezoneOffset}; path=/`;
-    
-    // Canvas fingerprinting
-    try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 200;
-        canvas.height = 200;
-        
-        // Draw background
-        ctx.fillStyle = '#f60';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#069';
-        ctx.fillText("PNP-PMS Fingerprint", 2, 15);
-        
-        // Draw shapes
-        ctx.textBaseline = "alphabetic";
-        ctx.fillStyle = "#f0f";
-        ctx.fillRect(125, 1, 62, 20);
-        ctx.fillStyle = "#0ff";
-        ctx.font = "15px Arial";
-        ctx.fillText("Canvas FP", 2, 40);
-        
-        // More complex rendering
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        gradient.addColorStop(0, "red");
-        gradient.addColorStop(0.5, "green");
-        gradient.addColorStop(1.0, "blue");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 50, canvas.width, 50);
-        
-        // Add some Unicode characters
-        ctx.fillStyle = "#000";
-        ctx.font = "12px Verdana";
-        ctx.fillText("👮‍♀️👮‍♂️🔑🔒", 10, 120);
-        
-        // WebGL context if available for more fingerprint data
-        let webglFp = 'none';
-        try {
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            if (gl) {
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                if (debugInfo) {
-                    webglFp = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) + 
-                              gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-                }
-            }
-        } catch (e) {
-            webglFp = 'error';
-        }
-        
-        // Get the canvas data URL and hash it
-        const canvasDataUrl = canvas.toDataURL();
-        let canvasHash = '';
-        for (let i = 0; i < canvasDataUrl.length; i++) {
-            canvasHash = ((canvasHash << 5) - canvasHash) + canvasDataUrl.charCodeAt(i);
-            canvasHash = canvasHash & canvasHash; // Convert to 32bit integer
-        }
-        
-        // Store canvas fingerprint
-        document.cookie = `canvas_fp=${canvasHash}_${webglFp}; path=/`;
-    } catch (e) {
-        document.cookie = `canvas_fp=error; path=/`;
-    }
-    
-    // Get device information
-    const deviceInfo = getDeviceInfo(navigator.userAgent);
-    
-    // Enhanced platform information
-    const platform = {
-        platform: navigator.platform,
-        userAgent: navigator.userAgent,
-        language: navigator.language,
-        deviceType: deviceInfo.type,
-        deviceBrand: deviceInfo.brand,
-        detectedOS: {
-            name: deviceInfo.os,
-            version: deviceInfo.osVersion,
-            fullName: deviceInfo.osVersion ? `${deviceInfo.os} ${deviceInfo.osVersion}` : deviceInfo.os
-        }
+    document.cookie = `timezone=${timezone}; path=/`;
+
+    const userAgent = navigator.userAgent;
+    let deviceInfo = {
+        type: "Desktop",
+        brand: "Unknown",
+        os: "Unknown",
+        osVersion: "Unknown",
+        browser: "Unknown",
+        browserVersion: "Unknown"
     };
 
-    // Browser Detection
-    if (navigator.userAgent.indexOf("Chrome") !== -1 && navigator.userAgent.indexOf("Edg") === -1 && navigator.userAgent.indexOf("OPR") === -1) {
-        platform.detectedBrowser = {
-            name: "Chrome",
-            version: navigator.userAgent.match(/Chrome\/([0-9.]+)/)[1]
-        };
-    } else if (navigator.userAgent.indexOf("Firefox") !== -1) {
-        platform.detectedBrowser = {
-            name: "Firefox",
-            version: navigator.userAgent.match(/Firefox\/([0-9.]+)/)[1]
-        };
-    } else if (navigator.userAgent.indexOf("Edg") !== -1) {
-        platform.detectedBrowser = {
-            name: "Edge",
-            version: navigator.userAgent.match(/Edg\/([0-9.]+)/)[1]
-        };
-    } else if (navigator.userAgent.indexOf("Safari") !== -1 && navigator.userAgent.indexOf("Chrome") === -1) {
-        platform.detectedBrowser = {
-            name: "Safari",
-            version: navigator.userAgent.match(/Safari\/([0-9.]+)/)[1]
-        };
-    } else if (navigator.userAgent.indexOf("OPR") !== -1) {
-        platform.detectedBrowser = {
-            name: "Opera",
-            version: navigator.userAgent.match(/OPR\/([0-9.]+)/)[1]
-        };
+    // More accurate mobile detection
+    if (/Mobile|Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(userAgent)) {
+        deviceInfo.type = "Mobile";
+        
+        // Detailed mobile brand detection
+        if (userAgent.includes("iPhone")) {
+            deviceInfo.brand = "iPhone";
+            deviceInfo.os = "iOS";
+            const match = userAgent.match(/iPhone OS (\d+_\d+)/);
+            if (match) {
+                deviceInfo.osVersion = match[1].replace(/_/g, '.');
+            }
+        } else if (userAgent.includes("iPad")) {
+            deviceInfo.brand = "iPad";
+            deviceInfo.os = "iPadOS";
+            const match = userAgent.match(/CPU OS (\d+_\d+)/);
+            if (match) {
+                deviceInfo.osVersion = match[1].replace(/_/g, '.');
+            }
+        } else if (userAgent.match(/Samsung|SM-[A-Z][0-9]/i)) {
+            deviceInfo.brand = "Samsung";
+            deviceInfo.os = "Android";
+            // Get specific Samsung model
+            const modelMatch = userAgent.match(/SM-[A-Z][0-9]\w+/i);
+            if (modelMatch) {
+                deviceInfo.brand = `Samsung ${modelMatch[0]}`;
+            }
+        } else if (userAgent.match(/Huawei|HW-|HONOR/i)) {
+            deviceInfo.brand = "Huawei";
+            deviceInfo.os = "Android";
+            // Get specific Huawei model
+            const modelMatch = userAgent.match(/(HUAWEI|HONOR)\s+([^;)]+)/i);
+            if (modelMatch) {
+                deviceInfo.brand = modelMatch[0];
+            }
+        } else if (userAgent.match(/Xiaomi|Redmi|POCO/i)) {
+            deviceInfo.brand = "Xiaomi";
+            deviceInfo.os = "Android";
+            // Get specific Xiaomi model
+            const modelMatch = userAgent.match(/(Redmi|POCO|Mi)\s+([^;)]+)/i);
+            if (modelMatch) {
+                deviceInfo.brand = `Xiaomi ${modelMatch[0]}`;
+            }
+        } else if (userAgent.match(/OPPO|CPH[0-9]/i)) {
+            deviceInfo.brand = "OPPO";
+            deviceInfo.os = "Android";
+            // Get specific OPPO model
+            const modelMatch = userAgent.match(/OPPO\s+([^;)]+)/i);
+            if (modelMatch) {
+                deviceInfo.brand = modelMatch[0];
+            }
+        } else if (userAgent.match(/vivo/i)) {
+            deviceInfo.brand = "Vivo";
+            deviceInfo.os = "Android";
+            // Get specific Vivo model
+            const modelMatch = userAgent.match(/vivo\s+([^;)]+)/i);
+            if (modelMatch) {
+                deviceInfo.brand = modelMatch[0];
+            }
+        } else if (userAgent.match(/realme/i)) {
+            deviceInfo.brand = "Realme";
+            deviceInfo.os = "Android";
+            // Get specific Realme model
+            const modelMatch = userAgent.match(/realme\s+([^;)]+)/i);
+            if (modelMatch) {
+                deviceInfo.brand = modelMatch[0];
+            }
+        } else if (userAgent.includes("Android")) {
+            deviceInfo.brand = "Android Device";
+            deviceInfo.os = "Android";
+        }
+
+        // Get precise Android version
+        if (deviceInfo.os === "Android") {
+            const match = userAgent.match(/Android\s+(\d+(\.\d+)*)/);
+            if (match) {
+                deviceInfo.osVersion = match[1];
+            }
+        }
+    } else {
+        // More accurate desktop OS detection
+        if (userAgent.includes("Windows")) {
+            deviceInfo.os = "Windows";
+            if (userAgent.includes("Windows NT 10.0")) {
+                deviceInfo.osVersion = "10";
+                if (userAgent.includes("Windows NT 10.0; Win64")) {
+                    deviceInfo.osVersion = "10 (64-bit)";
+                }
+            } else if (userAgent.includes("Windows NT 6.3")) {
+                deviceInfo.osVersion = "8.1";
+            } else if (userAgent.includes("Windows NT 6.2")) {
+                deviceInfo.osVersion = "8";
+            } else if (userAgent.includes("Windows NT 6.1")) {
+                deviceInfo.osVersion = "7";
+            }
+        } else if (userAgent.includes("Macintosh")) {
+            deviceInfo.os = "macOS";
+            const match = userAgent.match(/Mac OS X (\d+[._]\d+[._]?\d*)/);
+            if (match) {
+                deviceInfo.osVersion = match[1].replace(/_/g, '.');
+            }
+        } else if (userAgent.includes("Linux")) {
+            if (userAgent.includes("Ubuntu")) {
+                deviceInfo.os = "Ubuntu";
+                const match = userAgent.match(/Ubuntu[/\s](\d+\.\d+)/);
+                if (match) {
+                    deviceInfo.osVersion = match[1];
+                }
+            } else if (userAgent.includes("Fedora")) {
+                deviceInfo.os = "Fedora";
+                const match = userAgent.match(/Fedora[/\s](\d+)/);
+                if (match) {
+                    deviceInfo.osVersion = match[1];
+                }
+            } else if (userAgent.includes("SUSE")) {
+                deviceInfo.os = "SUSE Linux";
+            } else if (userAgent.includes("Debian")) {
+                deviceInfo.os = "Debian";
+            } else if (userAgent.includes("Mint")) {
+                deviceInfo.os = "Linux Mint";
+            } else {
+                deviceInfo.os = "Linux";
+            }
+        }
     }
 
-    platform.screen_resolution = screenInfo;
-    platform.timezone = timezone;
-    platform.full_user_agent = navigator.userAgent;
+    // More accurate browser detection
+    if (userAgent.includes("Firefox/")) {
+        deviceInfo.browser = "Firefox";
+        const match = userAgent.match(/Firefox\/([0-9.]+)/);
+        if (match) deviceInfo.browserVersion = match[1];
+    } else if (userAgent.includes("Edge/") || userAgent.includes("Edg/")) {
+        deviceInfo.browser = "Microsoft Edge";
+        const match = userAgent.match(/(?:Edge|Edg)\/([0-9.]+)/);
+        if (match) deviceInfo.browserVersion = match[1];
+    } else if (userAgent.includes("Chrome/") && !userAgent.includes("Chromium")) {
+        deviceInfo.browser = "Google Chrome";
+        const match = userAgent.match(/Chrome\/([0-9.]+)/);
+        if (match) deviceInfo.browserVersion = match[1];
+    } else if (userAgent.includes("Safari/") && !userAgent.includes("Chrome")) {
+        deviceInfo.browser = "Safari";
+        const match = userAgent.match(/Version\/([0-9.]+)/);
+        if (match) deviceInfo.browserVersion = match[1];
+    } else if (userAgent.includes("OPR/") || userAgent.includes("Opera/")) {
+        deviceInfo.browser = "Opera";
+        const match = userAgent.match(/(?:OPR|Opera)\/([0-9.]+)/);
+        if (match) deviceInfo.browserVersion = match[1];
+    }
 
-    document.cookie = `platform_info=${encodeURIComponent(JSON.stringify(platform))}; path=/`;
+    // Store all the information
+    const platformInfo = {
+        deviceType: deviceInfo.type,
+        deviceBrand: deviceInfo.brand,
+        os_name: deviceInfo.os,
+        os_version: deviceInfo.osVersion,
+        browser_name: deviceInfo.browser,
+        browser_version: deviceInfo.browserVersion,
+        screen_resolution: screenInfo,
+        timezone: timezone,
+        full_user_agent: userAgent
+    };
+
+    // Store the information in a cookie
+    document.cookie = `platform_info=${encodeURIComponent(JSON.stringify(platformInfo))}; path=/`;
 }
 
 // Call the function when the page loads
