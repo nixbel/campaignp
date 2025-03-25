@@ -525,9 +525,23 @@
                         hour: '2-digit', 
                         minute: '2-digit', 
                         second: '2-digit', 
-                        timeZone: 'Asia/Manila'
+                        timeZone: 'Asia/Manila',
+                        timeZoneName: 'short'
                     };
-                    lastUpdatedElement.textContent = lastUpdatedDate.toLocaleString(undefined, options);
+                    lastUpdatedElement.textContent = lastUpdatedDate.toLocaleString('en-PH', options) + ' (Philippines Time)';
+                    
+                    // Add a tooltip with UTC time for reference
+                    const utcOptions = { 
+                        year: 'numeric', 
+                        month: 'numeric', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit', 
+                        timeZone: 'UTC',
+                        timeZoneName: 'short'
+                    };
+                    lastUpdatedElement.title = `UTC time: ${lastUpdatedDate.toLocaleString('en-US', utcOptions)}`;
                 }
             }
             
