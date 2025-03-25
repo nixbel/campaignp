@@ -22,15 +22,26 @@ A function designed to retrieve
 and return the client's actual IP address.
 """
 def get_client_ip():
+    # Render and other cloud providers often use CF-Connecting-IP header
+    if request.headers.get('CF-Connecting-IP'):
+        return request.headers.get('CF-Connecting-IP')
+    
+    # Check for common proxy headers
     if request.headers.getlist("X-Forwarded-For"):
-        ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0]
-    elif request.headers.get("X-Real-IP"):
-        ip = request.headers.get("X-Real-IP")
-    elif request.environ.get('HTTP_X_FORWARDED_FOR'):
-        ip = request.environ.get('HTTP_X_FORWARDED_FOR').split(',')[0]
-    else:
-        ip = request.remote_addr
-    return ip
+        # Get the leftmost IP which is typically the original client
+        ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+        return ip
+    
+    # Some proxy setups use X-Real-IP
+    if request.headers.get("X-Real-IP"):
+        return request.headers.get("X-Real-IP")
+    
+    # Try WSGI environment variable
+    if request.environ.get('HTTP_X_FORWARDED_FOR'):
+        return request.environ.get('HTTP_X_FORWARDED_FOR').split(',')[0].strip()
+    
+    # Last resort - direct connection
+    return request.remote_addr
 
 """
 Function to determine if the client is using a mobile or desktop device
