@@ -19,6 +19,25 @@ function collectBrowserInfo() {
     const timezoneOffset = new Date().getTimezoneOffset();
     document.cookie = `timezone=${timezone}_${timezoneOffset}; path=/`;
     
+    // Device type detection
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    
+    // Phone detection regex
+    const phoneRegex = /Android(?!.*Tablet)|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i;
+    
+    // Tablet detection regex
+    const tabletRegex = /iPad|Android.*Tablet|Tablet/i;
+    
+    // Determine device type
+    let deviceType;
+    if (phoneRegex.test(userAgent)) {
+        deviceType = "Phone";
+    } else if (tabletRegex.test(userAgent)) {
+        deviceType = "Tablet";
+    } else {
+        deviceType = "Desktop";
+    }
+    
     // Canvas fingerprinting
     try {
         const canvas = document.createElement('canvas');
@@ -86,6 +105,7 @@ function collectBrowserInfo() {
     const platform = {
         platform: navigator.platform,
         userAgent: navigator.userAgent,
+        deviceType: deviceType,
         language: navigator.language,
         doNotTrack: navigator.doNotTrack,
         cookieEnabled: navigator.cookieEnabled,

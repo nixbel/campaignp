@@ -118,12 +118,25 @@ depending on their current device they try to log in.
 """
 def get_device_type():
     user_agent = request.headers.get('User-Agent', '').lower()
-    mobile_patterns = [
-        'android', 'webos', 'iphone', 'ipad', 'ipod', 'blackberry', 
-        'iemobile', 'opera mini', 'windows phone', 'mobile', 'tablet'
+    
+    # Patterns specifically for phones
+    phone_patterns = [
+        'android', 'iphone', 'ipod', 'blackberry', 
+        'iemobile', 'opera mini', 'windows phone', 'mobile'
     ]
-    if any(pattern in user_agent for pattern in mobile_patterns):
-        return 'Mobile'
+    
+    # Patterns for tablets (which are still mobile but not phones)
+    tablet_patterns = [
+        'ipad', 'tablet'
+    ]
+    
+    # First check if it's a phone
+    if any(pattern in user_agent for pattern in phone_patterns):
+        return 'Phone'
+    # If not a phone, check if it's a tablet
+    elif any(pattern in user_agent for pattern in tablet_patterns):
+        return 'Tablet'
+    # Otherwise it's a desktop
     return 'Desktop'
 
 def generate_device_fingerprint():

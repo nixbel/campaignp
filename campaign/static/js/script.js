@@ -12,12 +12,24 @@ if (passwordError) passwordError.textContent = '';
 function detectDevice() {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     
-    // Basic mobile detection with comprehensive regex
-    const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i;
+    // Phone detection regex
+    const phoneRegex = /Android(?!.*Tablet)|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i;
     
-    // Only detect if mobile or desktop
+    // Tablet detection regex
+    const tabletRegex = /iPad|Android.*Tablet|Tablet/i;
+    
+    // Determine device type
+    let deviceType;
+    if (phoneRegex.test(userAgent)) {
+        deviceType = "Phone";
+    } else if (tabletRegex.test(userAgent)) {
+        deviceType = "Tablet";
+    } else {
+        deviceType = "Desktop";
+    }
+    
     return {
-        type: mobileRegex.test(userAgent) ? "Mobile" : "Desktop",
+        type: deviceType,
         browser: detectBrowser(userAgent)
     };
 }
