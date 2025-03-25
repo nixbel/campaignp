@@ -22,26 +22,55 @@ A function designed to retrieve
 and return the client's actual IP address.
 """
 def get_client_ip():
-    # Render and other cloud providers often use CF-Connecting-IP header
-    if request.headers.get('CF-Connecting-IP'):
-        return request.headers.get('CF-Connecting-IP')
+    """
+    Enhanced function to get the most accurate client IP address
+    by checking multiple headers in priority order
+    """
+    # List of headers to check in priority order
+    ip_headers = [
+        'CF-Connecting-IP',           # Cloudflare
+        'True-Client-IP',             # Akamai and some CDNs
+        'X-Forwarded-For',            # Most common proxy header
+        'X-Real-IP',                  # Nginx proxy/FastCGI
+        'X-Client-IP',                # Apache proxy
+        'Forwarded',                  # RFC 7239 standard
+        'X-Forwarded',                # Non-standard but sometimes used
+        'X-Cluster-Client-IP',        # Used by some load balancers
+        'Fastly-Client-IP',           # Fastly CDN
+        'X-Originating-IP'            # Microsoft 
+    ]
     
-    # Check for common proxy headers
-    if request.headers.getlist("X-Forwarded-For"):
-        # Get the leftmost IP which is typically the original client
-        ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
-        return ip
+    # Check each header in order
+    for header in ip_headers:
+        if header.lower() == 'x-forwarded-for' and request.headers.getlist(header):
+            # X-Forwarded-For may contain multiple IPs, get the first one (client)
+            forwarded_for = request.headers.getlist(header)[0]
+            if forwarded_for:
+                # Get the leftmost IP which is typically the original client
+                client_ip = forwarded_for.split(',')[0].strip()
+                if client_ip and client_ip != '127.0.0.1' and client_ip != 'unknown':
+                    return client_ip
+        elif request.headers.get(header):
+            client_ip = request.headers.get(header).strip()
+            if client_ip and client_ip != '127.0.0.1' and client_ip != 'unknown':
+                return client_ip
     
-    # Some proxy setups use X-Real-IP
-    if request.headers.get("X-Real-IP"):
-        return request.headers.get("X-Real-IP")
-    
-    # Try WSGI environment variable
+    # Try WSGI environment variables if headers failed
     if request.environ.get('HTTP_X_FORWARDED_FOR'):
-        return request.environ.get('HTTP_X_FORWARDED_FOR').split(',')[0].strip()
+        forwarded_for = request.environ.get('HTTP_X_FORWARDED_FOR')
+        client_ip = forwarded_for.split(',')[0].strip()
+        if client_ip and client_ip != '127.0.0.1':
+            return client_ip
     
-    # Last resort - direct connection
-    return request.remote_addr
+    # Add a unique identifier if multiple users share the same IP
+    ip = request.remote_addr
+    user_agent = request.headers.get('User-Agent', '')
+    
+    # Return IP plus a fingerprint hash to help differentiate users behind same IP
+    import hashlib
+    fingerprint = hashlib.md5((user_agent + request.headers.get('Accept-Language', '')).encode()).hexdigest()[:8]
+    
+    return f"{ip} ({fingerprint})"
 
 """
 Function to determine if the client is using a mobile or desktop device
