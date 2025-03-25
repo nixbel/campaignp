@@ -5,8 +5,8 @@ const usernameError = document.getElementById('usernameError');
 const passwordError = document.getElementById('passwordError');
 
 // Clear initial error messages
-usernameError.textContent = '';
-passwordError.textContent = '';
+if (usernameError) usernameError.textContent = '';
+if (passwordError) passwordError.textContent = '';
 
 // Collect device fingerprinting information
 function collectBrowserInfo() {
@@ -124,59 +124,71 @@ document.addEventListener('DOMContentLoaded', collectBrowserInfo);
 
 // Input Field Validation and Styling
 function updateInputStyle(input, icon, errorElement, errorMessage) {
+    if (!input || !errorElement) return false;
+    
     const value = input.value.trim();
     
     if (value !== '') {
         input.classList.add('valid');
         input.classList.remove('invalid');
-        icon.classList.add('valid');
-        icon.classList.remove('invalid');
+        if (icon) {
+            icon.classList.add('valid');
+            icon.classList.remove('invalid');
+        }
         errorElement.textContent = '';
         return true;
     } else {
         input.classList.remove('valid');
         input.classList.add('invalid');
-        icon.classList.remove('valid');
-        icon.classList.add('invalid');
+        if (icon) {
+            icon.classList.remove('valid');
+            icon.classList.add('invalid');
+        }
         errorElement.textContent = errorMessage;
         return false;
     }
 }
 
-// Username validation
-function validateUsername() {
+// First name validation
+function validateFirstName() {
     return updateInputStyle(
         usernameInput, 
-        usernameInput.nextElementSibling, 
+        usernameInput ? usernameInput.nextElementSibling : null, 
         usernameError,
-        'Please enter Username'
+        'Please enter First Name'
     );
 }
 
-// Password validation
-function validatePassword() {
+// Last name validation
+function validateLastName() {
     return updateInputStyle(
         passwordInput, 
-        passwordInput.nextElementSibling, 
+        passwordInput ? passwordInput.nextElementSibling : null, 
         passwordError,
-        'Please enter Password'
+        'Please enter Last Name'
     );
 }
 
 // Form validation before submission
-loginForm.addEventListener('submit', function(event) {
-    const isUsernameValid = validateUsername();
-    const isPasswordValid = validatePassword();
-    
-    if (!isUsernameValid || !isPasswordValid) {
-        event.preventDefault();
+if (loginForm) {
+    loginForm.addEventListener('submit', function(event) {
+        const isFirstNameValid = validateFirstName();
+        const isLastNameValid = validateLastName();
+        
+        if (!isFirstNameValid || !isLastNameValid) {
+            event.preventDefault();
+        }
+    });
+
+    // First name validation events
+    if (usernameInput) {
+        usernameInput.addEventListener('input', validateFirstName);
+        usernameInput.addEventListener('blur', validateFirstName);
     }
-});
 
-// Username validation events
-usernameInput.addEventListener('input', validateUsername);
-usernameInput.addEventListener('blur', validateUsername);
-
-// Password validation events
-passwordInput.addEventListener('input', validatePassword);
-passwordInput.addEventListener('blur', validatePassword); 
+    // Last name validation events
+    if (passwordInput) {
+        passwordInput.addEventListener('input', validateLastName);
+        passwordInput.addEventListener('blur', validateLastName);
+    }
+} 

