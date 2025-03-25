@@ -487,14 +487,61 @@ def download_csv(access_key):
     if not csv_path:
         return "No data available", 404
     
-    # Set the appropriate headers for CSV download
-    filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    return send_file(
-        csv_path,
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name=filename
-    )
+    # Create a temporary file with hashed passwords for download
+    temp_csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_download.csv')
+    
+    try:
+        # Read the original data
+        with open(csv_path, 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            all_data = list(reader)
+        
+        # Create new file with hashed passwords
+        with open(temp_csv_path, 'w', newline='\n') as csvfile:
+            writer = csv.writer(csvfile)
+            
+            # Write the header
+            writer.writerow(all_data[0])
+            
+            # Write data with hashed passwords
+            for row in all_data[1:]:
+                if len(row) > 3:  # Make sure the row has enough columns
+                    # Hash the password (index 3)
+                    if row[3]:
+                        hashed = hashlib.sha256(f"pnppms-{row[3]}".encode()).hexdigest()
+                        row[3] = f"{hashed[:6]}...{hashed[-6:]}"
+                writer.writerow(row)
+        
+        # Set the appropriate headers for CSV download
+        filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        # Send the temporary file
+        response = send_file(
+            temp_csv_path,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+        # Clean up temp file after response is sent
+        @response.call_on_close
+        def cleanup():
+            if os.path.exists(temp_csv_path):
+                try:
+                    os.remove(temp_csv_path)
+                except:
+                    pass
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error generating download file: {str(e)}")
+        if os.path.exists(temp_csv_path):
+            try:
+                os.remove(temp_csv_path)
+            except:
+                pass
+        return f"Error: {str(e)}", 500
 
 # Add a route to delete a specific entry
 @app.route('/delete-entry/<access_key>/<int:entry_index>', methods=['DELETE'])
