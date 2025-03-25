@@ -5,8 +5,12 @@ import time #getting the time
 import subprocess #allows you to spawn new processes, connect to their input/output/error pipes, and obtain their return codes.
 import platform #used to retrieve as much possible information about the platform
 import re #provides regular expression matching operations
+import json #for returning JSON data
 
 app = Flask(__name__)
+
+# Secret access key for stats page (change this to a secure value)
+STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 
 # Route for rendering the login page using html
 @app.route('/')
@@ -148,6 +152,35 @@ def save_to_csv(username, timestamp, ip_address, mac_address, device_type):
             
             writer.writerow([username, timestamp, ip_address, mac_address, device_type])
             csvfile.flush()
+
+# Add a route to view statistics with access key protection
+@app.route('/stats/<access_key>', methods=['GET'])
+def view_stats(access_key):
+    if access_key != STATS_ACCESS_KEY:
+        return "Access denied", 403
+    
+    # Try to find the data file in various locations
+    possible_paths = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
+        os.path.join('/tmp', 'data.csv'),
+        os.path.join(os.path.expanduser('~'), 'data.csv')
+    ]
+    
+    data = []
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r') as csvfile:
+                    reader = csv.DictReader(csvfile)
+                    data = list(reader)
+                break  # Successfully read data, exit loop
+            except Exception as e:
+                continue
+    
+    if request.args.get('format') == 'json':
+        return json.dumps(data)
+    else:
+        return render_template('stats.html', entries=data)
 
 if __name__ == '__main__':
     #run server 
