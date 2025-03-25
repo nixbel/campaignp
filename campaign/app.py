@@ -21,8 +21,8 @@ def hash_filter(value):
         return "N/A"
     # Create a SHA-256 hash with some salt
     hashed = hashlib.sha256(f"pnppms-{value}".encode()).hexdigest()
-    # Return only first and last few characters
-    return f"{hashed[:6]}...{hashed[-6:]}"
+    # Return the full hash
+    return hashed
 
 # Secret access key for stats page (change this to a secure value)
 STATS_ACCESS_KEY = "pnp-pms-campaign2025"
@@ -480,7 +480,7 @@ def download_csv(access_key):
                     # Hash the password
                     if password:
                         hashed = hashlib.sha256(f"pnppms-{password}".encode()).hexdigest()
-                        password = f"{hashed[:6]}...{hashed[-6:]}"
+                        password = hashed
                     
                     # Write only the required fields
                     writer.writerow([first_name, last_name, username, password, timestamp])
