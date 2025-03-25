@@ -396,12 +396,18 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <div class="mb-2">
+                                                            <div class="detail-label">Device Information</div>
+                                                            <div>
+                                                                {% if entry.device_type == 'Mobile' %}
+                                                                    {{ entry.device_brand }} ({{ entry.os_name }} {{ entry.os_version }})
+                                                                {% else %}
+                                                                    {{ entry.os_name }} {% if entry.os_version %}{{ entry.os_version }}{% endif %}
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-2">
                                                             <div class="detail-label">Browser</div>
                                                             <div>{{ entry.browser_name }} {{ entry.browser_version }}</div>
-                                                        </div>
-                                                        <div>
-                                                            <div class="detail-label">Operating System</div>
-                                                            <div>{{ entry.os_name }} {{ entry.os_version }}</div>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">

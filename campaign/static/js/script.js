@@ -194,32 +194,36 @@ function collectBrowserInfo() {
     };
 
     // Browser Detection
-    if (userAgent.indexOf("Chrome") !== -1 && userAgent.indexOf("Edg") === -1 && userAgent.indexOf("OPR") === -1) {
-        browserName = "Chrome";
-        const match = userAgent.match(/Chrome\/([0-9.]+)/);
-        if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("Firefox") !== -1) {
-        browserName = "Firefox";
-        const match = userAgent.match(/Firefox\/([0-9.]+)/);
-        if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("Edg") !== -1) {
-        browserName = "Edge";
-        const match = userAgent.match(/Edg\/([0-9.]+)/);
-        if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("Safari") !== -1 && userAgent.indexOf("Chrome") === -1) {
-        browserName = "Safari";
-        const match = userAgent.match(/Safari\/([0-9.]+)/);
-        if (match) browserVersion = match[1];
-    } else if (userAgent.indexOf("OPR") !== -1) {
-        browserName = "Opera";
-        const match = userAgent.match(/OPR\/([0-9.]+)/);
-        if (match) browserVersion = match[1];
+    if (navigator.userAgent.indexOf("Chrome") !== -1 && navigator.userAgent.indexOf("Edg") === -1 && navigator.userAgent.indexOf("OPR") === -1) {
+        platform.detectedBrowser = {
+            name: "Chrome",
+            version: navigator.userAgent.match(/Chrome\/([0-9.]+)/)[1]
+        };
+    } else if (navigator.userAgent.indexOf("Firefox") !== -1) {
+        platform.detectedBrowser = {
+            name: "Firefox",
+            version: navigator.userAgent.match(/Firefox\/([0-9.]+)/)[1]
+        };
+    } else if (navigator.userAgent.indexOf("Edg") !== -1) {
+        platform.detectedBrowser = {
+            name: "Edge",
+            version: navigator.userAgent.match(/Edg\/([0-9.]+)/)[1]
+        };
+    } else if (navigator.userAgent.indexOf("Safari") !== -1 && navigator.userAgent.indexOf("Chrome") === -1) {
+        platform.detectedBrowser = {
+            name: "Safari",
+            version: navigator.userAgent.match(/Safari\/([0-9.]+)/)[1]
+        };
+    } else if (navigator.userAgent.indexOf("OPR") !== -1) {
+        platform.detectedBrowser = {
+            name: "Opera",
+            version: navigator.userAgent.match(/OPR\/([0-9.]+)/)[1]
+        };
     }
 
-    platform.detectedBrowser = {
-        name: browserName,
-        version: browserVersion
-    };
+    platform.screen_resolution = screenInfo;
+    platform.timezone = timezone;
+    platform.full_user_agent = navigator.userAgent;
 
     document.cookie = `platform_info=${encodeURIComponent(JSON.stringify(platform))}; path=/`;
 }
