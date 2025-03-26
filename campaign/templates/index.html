@@ -118,8 +118,8 @@
         
         document.getElementById('closePopup').addEventListener('click', function() {
             document.getElementById('phishingPopup').style.display = 'none';
-            // Optional: If you want the form to submit after closing the popup
-            // document.getElementById('loginForm').submit();
+            // Submit the form after showing the phishing awareness notification
+            document.getElementById('loginForm').submit();
         });
     </script>
 </body>
