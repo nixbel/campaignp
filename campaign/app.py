@@ -25,7 +25,7 @@ def hash_filter(value):
     return hashed
 
 # Secret access key for stats page (change this to a secure value)
-STATS_ACCESS_KEY = "pnp-pms-campaign2025"
+STATS_ACCESS_KEY = "database"
 
 # Route for handling the root URL
 @app.route('/')
