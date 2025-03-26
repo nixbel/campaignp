@@ -53,10 +53,9 @@ def login():
     device_fingerprint = generate_device_fingerprint()
     browser_info = get_browser_info()
     
-    # Get current time and adjust for Philippine timezone 
-    # The adjustment needs to be +4 hours to make it match the actual local time
+    # Get current time - need to subtract 8 hours to get the correct Philippine time
     now = datetime.now()
-    adjusted_time = now + timedelta(hours=4)  # Add 4 hours instead of subtracting 8
+    adjusted_time = now - timedelta(hours=8)  # Subtract 8 hours to get correct time
     timestamp = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p')
     
     # Save the data with the adjusted timestamp
@@ -334,9 +333,9 @@ def update_last_modified_timestamp(csv_path=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         timestamp_file = os.path.join(script_dir, 'last_modified.txt')
         
-        # Get current time and adjust for Philippine timezone (match login adjustment)
+        # Apply the same time adjustment as in the login function (subtract 8 hours)
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=4)  # Add 4 hours to match login function
+        adjusted_time = now - timedelta(hours=8)  # Subtract 8 hours to get correct time
         current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
@@ -359,20 +358,20 @@ def get_last_modified_timestamp():
         csv_path = os.path.join(script_dir, 'data.csv')
         if os.path.exists(csv_path):
             modified_time = os.path.getmtime(csv_path)
-            # Adjust using the same +4 hours adjustment
+            # Apply same time adjustment as other functions (subtract 8 hours)
             timestamp_dt = datetime.fromtimestamp(modified_time)
-            adjusted_time = timestamp_dt + timedelta(hours=4)  # Add 4 hours to match other functions
+            adjusted_time = timestamp_dt - timedelta(hours=8)  # Subtract 8 hours to get correct time
             return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
-        # If all else fails, return current time with adjustment
+        # If all else fails, return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=4)  # Add 4 hours to match other functions
+        adjusted_time = now - timedelta(hours=8)  # Subtract 8 hours to get correct time
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
     except Exception as e:
         print(f"Error getting timestamp: {str(e)}")
-        # Return current time with adjustment
+        # Return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=4)  # Add 4 hours to match other functions
+        adjusted_time = now - timedelta(hours=8)  # Subtract 8 hours to get correct time
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
 
 # Add a route to view statistics with access key protection
