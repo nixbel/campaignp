@@ -336,7 +336,7 @@ def update_last_modified_timestamp(csv_path=None):
         
         # Adjust for timezone difference (-8 hours)
         now = datetime.now()
-        adjusted_time = now - timedelta(hours=8)
+        adjusted_time = now - timedelta(hours=4)
         current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
