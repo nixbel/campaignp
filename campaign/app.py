@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, session, send_file
+from flask import Flask, render_template, request, redirect, jsonify, session, send_file, url_for
 import csv # getting the configuration of csv
 import os # configuration/ portable way of using operating system
 import time #getting the time
@@ -380,6 +380,11 @@ def view_stats(access_key):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
+    # Check if user is authenticated for dashboard
+    if 'dashboard_auth' not in session:
+        # If not authenticated, redirect to dashboard login
+        return redirect(url_for('dashboard_login', access_key=access_key))
+    
     # Try to find the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
@@ -416,11 +421,42 @@ def view_stats(access_key):
     else:
         return render_template('stats.html', entries=data, access_key=access_key, last_updated=last_updated)
 
-# Add a route to download the CSV data
+# Add a dashboard login route
+@app.route('/dashboard-login/<access_key>', methods=['GET', 'POST'])
+def dashboard_login(access_key):
+    if access_key != STATS_ACCESS_KEY:
+        return "Access denied", 403
+        
+    error = None
+    
+    # Define the dashboard credentials - these can be changed as needed
+    dashboard_password = "PNP-DICTM-2025"  # Change this to a secure password
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        
+        if not password:
+            error = "Please enter a password"
+        elif password == dashboard_password:
+            # Password is correct, set session variable and redirect to dashboard
+            session['dashboard_auth'] = True
+            return redirect(url_for('view_stats', access_key=access_key))
+        else:
+            error = "Invalid password"
+    
+    # Render login template
+    return render_template('dashboard_login.html', access_key=access_key, error=error)
+
+# Add routes to secure all dashboard-related operations
 @app.route('/download-csv/<access_key>', methods=['GET'])
 def download_csv(access_key):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
+    
+    # Check if user is authenticated for dashboard
+    if 'dashboard_auth' not in session:
+        # If not authenticated, redirect to dashboard login
+        return redirect(url_for('dashboard_login', access_key=access_key))
     
     # Try to find the data file in various locations
     possible_paths = [
@@ -500,6 +536,11 @@ def delete_entry(access_key, entry_index):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
+    # Check if user is authenticated for dashboard
+    if 'dashboard_auth' not in session:
+        # If not authenticated, return auth error
+        return "Authentication required", 401
+    
     # Try to find the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
@@ -550,6 +591,11 @@ def delete_all(access_key):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
+    # Check if user is authenticated for dashboard
+    if 'dashboard_auth' not in session:
+        # If not authenticated, return auth error
+        return "Authentication required", 401
+    
     # Try to find the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
@@ -585,6 +631,14 @@ def delete_all(access_key):
     except Exception as e:
         print(f"Error deleting all entries: {str(e)}")
         return f"Error: {str(e)}", 500
+
+# Add a logout route for the dashboard
+@app.route('/dashboard-logout/<access_key>')
+def dashboard_logout(access_key):
+    # Remove dashboard authentication from session
+    session.pop('dashboard_auth', None)
+    # Redirect to dashboard login
+    return redirect(url_for('dashboard_login', access_key=access_key))
 
 if __name__ == '__main__':
     #run server 
