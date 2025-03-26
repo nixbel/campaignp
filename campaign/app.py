@@ -28,7 +28,7 @@ def hash_filter(value):
 STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 
 # Route for rendering the identity page as the main landing page
-@app.route('/Account/Login?ReturnUrl=%2F')
+@app.route('/Account/Login')
 def index():
     return render_template('index.html')
 
