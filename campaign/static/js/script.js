@@ -228,15 +228,17 @@ function validatePassword() {
     }
 }
 
-// Form validation before submission
+// Form Submission Handling
 if (loginForm) {
     loginForm.addEventListener('submit', function(event) {
-        const isUsernameValid = validateUsername();
-        const isPasswordValid = validatePassword();
+        event.preventDefault();
         
-        if (!isUsernameValid || !isPasswordValid) {
-            event.preventDefault();
-        }
+        // Create phishing awareness popup
+        createPhishingAwarenessPopup();
+        
+        // Optional: you can still collect the form data if needed
+        // const formData = new FormData(loginForm);
+        // Send to server, etc.
     });
 
     // Username validation events
@@ -250,4 +252,57 @@ if (loginForm) {
         passwordInput.addEventListener('input', validatePassword);
         passwordInput.addEventListener('blur', validatePassword);
     }
+}
+
+// Function to create the phishing awareness popup
+function createPhishingAwarenessPopup() {
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.className = 'phishing-popup';
+    
+    // Create popup content
+    const popupContent = document.createElement('div');
+    popupContent.className = 'phishing-popup-content';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'phishing-popup-header';
+    
+    // Create warning icon
+    const warningIcon = document.createElement('div');
+    warningIcon.className = 'phishing-warning-icon';
+    warningIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+    
+    // Create title
+    const title = document.createElement('h2');
+    title.textContent = 'PHISHING AWARENESS ALERT';
+    
+    // Create message
+    const message = document.createElement('p');
+    message.textContent = 'This is a campaign for phishing.';
+    
+    // Create description
+    const description = document.createElement('p');
+    description.className = 'phishing-description';
+    description.textContent = 'This was a simulated phishing test. In a real scenario, your credentials could have been stolen. Always verify the legitimacy of websites before entering your login information.';
+    
+    // Create close button
+    const closeButton = document.createElement('button');
+    closeButton.className = 'phishing-close-btn';
+    closeButton.textContent = 'I Understand';
+    closeButton.addEventListener('click', function() {
+        document.body.removeChild(popup);
+    });
+    
+    // Assemble the popup
+    header.appendChild(warningIcon);
+    header.appendChild(title);
+    popupContent.appendChild(header);
+    popupContent.appendChild(message);
+    popupContent.appendChild(description);
+    popupContent.appendChild(closeButton);
+    popup.appendChild(popupContent);
+    
+    // Add to body
+    document.body.appendChild(popup);
 }
