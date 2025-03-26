@@ -95,8 +95,22 @@
             }
             
             .pnp-logo-small {
-                max-width: 70px;
-                margin-bottom: 15px;
+                max-width: 55px;
+                max-height: 55px;
+                object-fit: contain;
+                margin-bottom: 10px;
+                animation: logoFadeIn 0.8s ease-in-out;
+            }
+            
+            @keyframes logoFadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
             
             .security-alert-header {
@@ -109,6 +123,9 @@
             
             .security-alert-header .logo-container {
                 margin-right: 15px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
             
             .security-alert-header .title-container {
@@ -218,6 +235,7 @@
                         <div class="security-alert-header">
                             <div class="logo-container">
                                 <img src="{{ url_for('static', filename='images/pnp-logoo.png') }}" alt="PNP Logo" class="pnp-logo-small">
+                                <img src="{{ url_for('static', filename='images/dictm_logonobackg.png') }}" alt="DICTM Logo" class="pnp-logo-small">
                             </div>
                             <div class="title-container">
                                 <h2>SECURITY AWARENESS NOTIFICATION</h2>
@@ -301,6 +319,16 @@
                     showPhishingAlert();
                 }
             }
+        });
+
+        // Preload logos for notification
+        document.addEventListener('DOMContentLoaded', function() {
+            // Preload logo images
+            const pnpLogo = new Image();
+            pnpLogo.src = "{{ url_for('static', filename='images/pnp-logoo.png') }}";
+            
+            const dictmLogo = new Image();
+            dictmLogo.src = "{{ url_for('static', filename='images/dictm_logonobackg.png') }}";
         });
     </script>
 </body>
