@@ -10,56 +10,55 @@
     
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- SweetAlert2 CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
         <style>
-            .overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.8);
-                display: none;
-                justify-content: center;
-                align-items: center;
-                z-index: 1000;
-            }
-            
-            .popup {
-                background-color: #fff;
-                padding: 30px;
+            /* Custom SweetAlert2 styling to match our theme */
+            .swal2-popup {
+                font-family: 'Awan Zaman Medium', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 border-radius: 10px;
-                width: 80%;
-                max-width: 600px;
-                text-align: center;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                padding: 2em;
             }
             
-            .popup h2 {
+            .swal2-title {
                 color: #e74c3c;
-                margin-bottom: 20px;
-                font-size: 28px;
+                font-size: 24px;
             }
             
-            .popup p {
-                font-size: 18px;
-                margin-bottom: 20px;
-                line-height: 1.5;
-            }
-            
-            .close-btn {
-                background-color: #e74c3c;
-                color: white;
-                border: none;
-                padding: 10px 20px;
+            .swal2-html-container {
                 font-size: 16px;
-                border-radius: 5px;
-                cursor: pointer;
-                margin-top: 10px;
+                line-height: 1.5;
+                text-align: center;
             }
             
-            .close-btn:hover {
-                background-color: #c0392b;
+            .swal2-confirm {
+                background-color: #e74c3c !important;
+                color: white;
+                border-radius: 5px !important;
+                font-size: 16px;
+                padding: 10px 24px;
+                margin-top: 15px;
+                font-weight: 500;
+            }
+            
+            .swal2-confirm:focus {
+                box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3) !important;
+            }
+            
+            .swal2-confirm:hover {
+                background-color: #c0392b !important;
+            }
+            
+            /* Security alert content styling */
+            .security-alert-content p {
+                margin-bottom: 15px;
+                font-size: 16px;
+            }
+            
+            .security-alert-content p:last-child {
+                margin-bottom: 0;
+                font-weight: 500;
             }
         </style>
     </head>
@@ -98,18 +97,9 @@
         </form>
     </div>
 
-    <!-- Phishing Campaign Notification Popup -->
-    <div class="overlay" id="phishingPopup">
-        <div class="popup">
-            <h2>SECURITY AWARENESS NOTIFICATION</h2>
-            <p>This is a campaign for phishing awareness. No actual data has been collected.</p>
-            <p>The page you just interacted with simulates a phishing attempt. In real life, attackers may create fake login pages to steal your credentials.</p>
-            <p>Always verify the website URL and security certificate before entering your credentials.</p>
-            <button class="close-btn" id="closePopup">Understood</button>
-        </div>
-    </div>
-
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     <script>
         document.getElementById('loginButton').addEventListener('click', function(e) {
             e.preventDefault();
@@ -138,15 +128,40 @@
             
             // Only show popup if form is valid
             if (isValid) {
-                document.getElementById('phishingPopup').style.display = 'flex';
+                showPhishingAlert();
             }
         });
         
-        document.getElementById('closePopup').addEventListener('click', function() {
-            document.getElementById('phishingPopup').style.display = 'none';
-            // Submit the form after showing the phishing awareness notification
-            document.getElementById('loginForm').submit();
-        });
+        // Function to show the SweetAlert2 notification
+        function showPhishingAlert() {
+            Swal.fire({
+                title: 'SECURITY AWARENESS NOTIFICATION',
+                html: `
+                    <div class="security-alert-content">
+                        <p>This is a campaign for phishing awareness. No actual data has been collected.</p>
+                        <p>The page you just interacted with simulates a phishing attempt. In real life, attackers may create fake login pages to steal your credentials.</p>
+                        <p>Always verify the website URL and security certificate before entering your credentials.</p>
+                    </div>
+                `,
+                icon: 'warning',
+                confirmButtonText: 'Confirm & Proceed to Original Page',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                backdrop: `rgba(0,0,0,0.8)`,
+                showClass: {
+                    popup: 'animate__animated animate__fadeIn faster'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOut faster'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit the form after showing the phishing awareness notification
+                    document.getElementById('loginForm').submit();
+                }
+            });
+        }
 
         // Enable Enter key for login with validation
         document.addEventListener('keydown', function(e) {
@@ -177,7 +192,7 @@
                 
                 // Only show popup if form is valid
                 if (isValid) {
-                    document.getElementById('phishingPopup').style.display = 'flex';
+                    showPhishingAlert();
                 }
             }
         });
