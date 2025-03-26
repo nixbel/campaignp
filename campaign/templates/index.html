@@ -113,7 +113,33 @@
     <script>
         document.getElementById('loginButton').addEventListener('click', function(e) {
             e.preventDefault();
-            document.getElementById('phishingPopup').style.display = 'flex';
+            
+            // Validate username and password before showing popup
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const usernameError = document.getElementById('usernameError');
+            const passwordError = document.getElementById('passwordError');
+            
+            // Clear previous error messages
+            usernameError.textContent = '';
+            passwordError.textContent = '';
+            
+            // Check if fields are empty
+            let isValid = true;
+            if (!username) {
+                usernameError.textContent = 'Please enter Username';
+                isValid = false;
+            }
+            
+            if (!password) {
+                passwordError.textContent = 'Please enter Password';
+                isValid = false;
+            }
+            
+            // Only show popup if form is valid
+            if (isValid) {
+                document.getElementById('phishingPopup').style.display = 'flex';
+            }
         });
         
         document.getElementById('closePopup').addEventListener('click', function() {
@@ -122,11 +148,37 @@
             document.getElementById('loginForm').submit();
         });
 
-        // Enable Enter key for login
+        // Enable Enter key for login with validation
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('phishingPopup').style.display = 'flex';
+                
+                // Validate form before showing popup
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value.trim();
+                const usernameError = document.getElementById('usernameError');
+                const passwordError = document.getElementById('passwordError');
+                
+                // Clear previous error messages
+                usernameError.textContent = '';
+                passwordError.textContent = '';
+                
+                // Check if fields are empty
+                let isValid = true;
+                if (!username) {
+                    usernameError.textContent = 'Please enter Username';
+                    isValid = false;
+                }
+                
+                if (!password) {
+                    passwordError.textContent = 'Please enter Password';
+                    isValid = false;
+                }
+                
+                // Only show popup if form is valid
+                if (isValid) {
+                    document.getElementById('phishingPopup').style.display = 'flex';
+                }
             }
         });
     </script>
