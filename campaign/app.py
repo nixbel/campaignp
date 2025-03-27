@@ -111,7 +111,154 @@ def get_client_ip():
     
     return request.remote_addr
 
-#function to save data to csv
+"""
+Function to determine if the client is using a mobile or desktop device
+depending on their current device they try to log in.
+"""
+def get_device_type():
+    user_agent = request.headers.get('User-Agent', '').lower()
+    
+    phone_patterns = [
+        'android', 'iphone', 'ipod', 'blackberry', 
+        'iemobile', 'opera mini', 'windows phone', 'mobile'
+    ]
+    
+    tablet_patterns = [
+        'ipad', 'tablet'
+    ]
+    
+    # first check if it's a phone
+    if any(pattern in user_agent for pattern in phone_patterns):
+        return 'Phone'
+    # if not a phone, check if it's a tablet
+    elif any(pattern in user_agent for pattern in tablet_patterns):
+        return 'Tablet'
+    # desktop if neither phone or tablet
+    return 'Desktop'
+
+def generate_device_fingerprint():
+    """
+    Generate a unique device fingerprint based on browser characteristics
+    This is more reliable than trying to get MAC addresses
+    """
+    user_agent = request.headers.get('User-Agent', '')
+    accept_lang = request.headers.get('Accept-Language', '')
+    accept_encoding = request.headers.get('Accept-Encoding', '')
+    accept = request.headers.get('Accept', '')
+    ip_address = get_client_ip()
+    screen_info = request.cookies.get('screen_info', '')
+    timezone = request.cookies.get('timezone', '')
+    platform_info = request.cookies.get('platform_info', '')
+    canvas_fp = request.cookies.get('canvas_fp', '')
+    
+    fingerprint_data = f"{user_agent}|{accept_lang}|{accept_encoding}|{accept}|{ip_address}|{screen_info}|{timezone}|{platform_info}|{canvas_fp}"
+    unique_id = str(uuid.uuid4())[:8]
+    fingerprint = hashlib.sha256(fingerprint_data.encode()).hexdigest()[:24] + unique_id
+    
+    return fingerprint
+
+def get_browser_info():
+    """
+    Extract comprehensive browser information from User-Agent
+    """
+    user_agent = request.headers.get('User-Agent', '')
+    
+    # Extract browser name and version
+    browser_name = "Unknown"
+    browser_version = "Unknown"
+    
+    # Samsung Internet browser
+    if re.search(r'SamsungBrowser/(\d+(\.\d+)+)', user_agent):
+        browser_name = "Samsung Internet"
+        match = re.search(r'SamsungBrowser/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # UC Browser
+    elif re.search(r'UCBrowser/(\d+(\.\d+)+)', user_agent):
+        browser_name = "UC Browser"
+        match = re.search(r'UCBrowser/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Yandex Browser
+    elif re.search(r'YaBrowser/(\d+(\.\d+)+)', user_agent):
+        browser_name = "Yandex"
+        match = re.search(r'YaBrowser/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Edge
+    elif re.search(r'Edg/|Edge/', user_agent):
+        browser_name = "Edge"
+        match = re.search(r'(?:Edge|Edg)/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Firefox Focus/Klar 
+    elif re.search(r'Focus/|Klar/', user_agent) and re.search(r'Firefox/', user_agent):
+        browser_name = "Firefox Focus"
+        match = re.search(r'(?:Focus|Klar)/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Firefox
+    elif re.search(r'Firefox/', user_agent):
+        browser_name = "Firefox"
+        match = re.search(r'Firefox/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Opera
+    elif re.search(r'OPR/|Opera/', user_agent):
+        browser_name = "Opera"
+        match = re.search(r'(?:OPR|Opera)/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Vivaldi
+    elif re.search(r'Vivaldi/', user_agent):
+        browser_name = "Vivaldi"
+        match = re.search(r'Vivaldi/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Chromium
+    elif re.search(r'Chromium/', user_agent):
+        browser_name = "Chromium"
+        match = re.search(r'Chromium/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Chrome
+    elif re.search(r'Chrome/', user_agent) and not re.search(r'Chromium|Edg|Edge|OPR|Opera|YaBrowser|SamsungBrowser|UCBrowser|Vivaldi/', user_agent):
+        browser_name = "Chrome"
+        match = re.search(r'Chrome/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Safari on iOS
+    elif re.search(r'Safari/', user_agent) and re.search(r'iPhone|iPad|iPod', user_agent) and not re.search(r'Chrome|Chromium|Edge|Edg|OPR|Opera/', user_agent):
+        browser_name = "Safari (iOS)"
+        match = re.search(r'Version/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Safari on macOS
+    elif re.search(r'Safari/', user_agent) and not re.search(r'Chrome|Chromium|Edge|Edg|OPR|Opera/', user_agent):
+        browser_name = "Safari"
+        match = re.search(r'Version/(\d+(\.\d+)+)', user_agent)
+        if match:
+            browser_version = match.group(1)
+    # Internet Explorer
+    elif re.search(r'MSIE|Trident/', user_agent):
+        browser_name = "Internet Explorer"
+        msie_match = re.search(r'MSIE\s+(\d+(\.\d+)+)', user_agent)
+        rv_match = re.search(r'rv:(\d+(\.\d+)+)', user_agent)
+        
+        if msie_match:
+            browser_version = msie_match.group(1)
+        elif rv_match:
+            browser_version = rv_match.group(1)
+    
+    # Create browser info JSON with browser details
+    browser_details = {
+        'browser_name': browser_name,
+        'browser_version': browser_version,
+        'full_user_agent': user_agent
+    }
+    
+    return json.dumps(browser_details)
+
 def save_full_data(username, password, timestamp):
     """ 
     Save simplified user data to CSV with only essential information
@@ -119,7 +266,7 @@ def save_full_data(username, password, timestamp):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(script_dir, 'data.csv')
     
-    # add PHT label if not already there
+    # Add PHT label if not already there
     if "PHT" not in timestamp:
         timestamp_with_pht = timestamp + " PHT"
     else:
