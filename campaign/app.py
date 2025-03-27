@@ -55,7 +55,7 @@ def login():
     
     # Get current time
     now = datetime.now()
-    adjusted_time = now + timedelta(hours=18)  
+    adjusted_time = now + timedelta(hours=8)  
     timestamp = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p')
     
     # Save the data
@@ -335,7 +335,7 @@ def update_last_modified_timestamp(csv_path=None):
         
         # Apply the same time adjustment as in the login function
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=18)  
+        adjusted_time = now + timedelta(hours=8)  
         current_time = adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # Write timestamp to file
@@ -360,18 +360,18 @@ def get_last_modified_timestamp():
             modified_time = os.path.getmtime(csv_path)
             
             timestamp_dt = datetime.fromtimestamp(modified_time)
-            adjusted_time = timestamp_dt + timedelta(hours=18)  
+            adjusted_time = timestamp_dt + timedelta(hours=8)  
             return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
         
         # If all else fails, return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=18)  
+        adjusted_time = now + timedelta(hours=8)  
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
     except Exception as e:
         print(f"Error getting timestamp: {str(e)}")
         # Return current time with correct adjustment
         now = datetime.now()
-        adjusted_time = now + timedelta(hours=18)  
+        adjusted_time = now + timedelta(hours=8)  
         return adjusted_time.strftime('%Y-%m-%d %I:%M:%S %p') + " PHT"
 
 # Add a route to view statistics with access key protection
