@@ -496,6 +496,17 @@
                 });
             });
 
+            // Add event listener for browser back/forward buttons
+            window.addEventListener('popstate', function(e) {
+                fetch(`/dashboard-logout/${access_key}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    keepalive: true
+                });
+            });
+
             // Update current time every second
             function updateTime() {
                 const now = new Date();

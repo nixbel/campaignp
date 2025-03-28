@@ -678,7 +678,7 @@ def delete_all(access_key):
         return f"Error: {str(e)}", 500
 
 # logout route for the dashboard
-@app.route('/dashboard-logout/<access_key>')
+@app.route('/dashboard-logout/<access_key>', methods=['GET', 'POST'])
 def dashboard_logout(access_key):
     # remove all session data
     session.clear()
