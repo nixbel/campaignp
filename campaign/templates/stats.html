@@ -457,6 +457,19 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Add event listener for window/tab close
+            window.addEventListener('beforeunload', function(e) {
+                // Trigger logout when window/tab is closed
+                fetch(`/dashboard-logout/${access_key}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    // Use keepalive to ensure the request completes even if the page is unloading
+                    keepalive: true
+                });
+            });
+
             // Update current time every second
             function updateTime() {
                 const now = new Date();
