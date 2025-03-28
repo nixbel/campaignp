@@ -30,7 +30,7 @@ def hash_filter(value):
     return hashed
 
 # Secret access key for stats page (tip: here is the key for dashboard URL) 
-STATS_ACCESS_KEY = "database"
+STATS_ACCESS_KEY = "1cdf60e3d6ca57a097265dc72d73d871"
 
 # route for handling the starting URL or pinakaunang URL
 @app.route('/')
@@ -445,7 +445,7 @@ def dashboard_login(access_key):
     error = None
     
     # Define the dashboard credentials - these can be changed as needed
-    dashboard_password = "PNP-DICTM-2025"  # Change this to a secure password
+    dashboard_password = "OJT-PNP-DICTM-2025"  # Change this to a secure password
     
     if request.method == 'POST':
         password = request.form.get('password')
