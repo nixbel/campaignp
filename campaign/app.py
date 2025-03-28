@@ -12,6 +12,11 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+# Set session timeout to 1 hour
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # add a custom filter for hashing passwords in templates
 @app.template_filter('hash')
@@ -380,10 +385,20 @@ def view_stats(access_key):
     if access_key != STATS_ACCESS_KEY:
         return "Access denied", 403
     
-    # Check if user is authenticated for dashboard
-    if 'dashboard_auth' not in session:
-        # If not authenticated, redirect to dashboard login
+    # Check if user is authenticated for dashboard and session is still valid
+    if 'dashboard_auth' not in session or 'last_activity' not in session:
+        # If not authenticated or session expired, redirect to dashboard login
         return redirect(url_for('dashboard_login', access_key=access_key))
+    
+    # Check if session has expired (1 hour)
+    last_activity = datetime.fromisoformat(session['last_activity'])
+    if datetime.now() - last_activity > timedelta(hours=1):
+        # Session expired, clear it and redirect to login
+        session.clear()
+        return redirect(url_for('dashboard_login', access_key=access_key))
+    
+    # Update last activity timestamp
+    session['last_activity'] = datetime.now().isoformat()
     
     # Try to find the data file in various locations
     possible_paths = [
@@ -438,8 +453,10 @@ def dashboard_login(access_key):
         if not password:
             error = "Please enter a password"
         elif password == dashboard_password:
-            # Password is correct, set session variable and redirect to dashboard
+            # Password is correct, set session variables and redirect to dashboard
             session['dashboard_auth'] = True
+            session['last_activity'] = datetime.now().isoformat()
+            session.permanent = True  # Make session permanent
             return redirect(url_for('view_stats', access_key=access_key))
         else:
             error = "Invalid password"
@@ -663,8 +680,8 @@ def delete_all(access_key):
 # logout route for the dashboard
 @app.route('/dashboard-logout/<access_key>')
 def dashboard_logout(access_key):
-    # remove dashboard authentication from session
-    session.pop('dashboard_auth', None)
+    # remove all session data
+    session.clear()
     # redirect to dashboard login
     return redirect(url_for('dashboard_login', access_key=access_key))
 

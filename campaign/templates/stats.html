@@ -470,6 +470,32 @@
                 });
             });
 
+            // Add event listener for visibility change
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    // Page is hidden (tab/window closed or minimized)
+                    fetch(`/dashboard-logout/${access_key}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        keepalive: true
+                    });
+                }
+            });
+
+            // Add event listener for page unload
+            window.addEventListener('unload', function(e) {
+                // Trigger logout when page is unloaded
+                fetch(`/dashboard-logout/${access_key}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    keepalive: true
+                });
+            });
+
             // Update current time every second
             function updateTime() {
                 const now = new Date();
