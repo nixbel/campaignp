@@ -447,6 +447,26 @@ def dashboard_login(access_key):
     # Render login template
     return render_template('dashboard_login.html', access_key=access_key, error=error)
 
+# Add a route to verify password
+@app.route('/verify-password/<access_key>', methods=['POST'])
+def verify_password(access_key):
+    if access_key != STATS_ACCESS_KEY:
+        return jsonify({"success": False, "error": "Access denied"}), 403
+    
+    data = request.get_json()
+    password = data.get('password')
+    
+    # Define the dashboard credentials - these can be changed as needed
+    dashboard_password = "PNP-DICTM-2025"  # Change this to a secure password
+    
+    if not password:
+        return jsonify({"success": False, "error": "Password is required"}), 400
+    
+    if password == dashboard_password:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"success": False, "error": "Invalid password"}), 401
+
 # Add routes to secure all dashboard-related operations
 @app.route('/download-csv/<access_key>', methods=['GET'])
 def download_csv(access_key):
@@ -457,6 +477,11 @@ def download_csv(access_key):
     if 'dashboard_auth' not in session:
         # If not authenticated, redirect to dashboard login
         return redirect(url_for('dashboard_login', access_key=access_key))
+    
+    # Get password from query parameters
+    password = request.args.get('password')
+    if not password or password != "PNP-DICTM-2025":
+        return "Password verification required", 401
     
     # try to find the data file in various locations
     possible_paths = [
@@ -534,6 +559,12 @@ def delete_entry(access_key, entry_index):
         # not authenticated then, return auth error
         return "Authentication required", 401
     
+    # Get password from request data
+    data = request.get_json()
+    password = data.get('password')
+    if not password or password != "PNP-DICTM-2025":
+        return "Password verification required", 401
+    
     # dig the data file in various locations
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
@@ -587,6 +618,12 @@ def delete_all(access_key):
     if 'dashboard_auth' not in session:
         # if not authenticated then, return auth error
         return "Authentication required", 401
+    
+    # Get password from request data
+    data = request.get_json()
+    password = data.get('password')
+    if not password or password != "PNP-DICTM-2025":
+        return "Password verification required", 401
     
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),

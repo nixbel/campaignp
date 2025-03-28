@@ -410,6 +410,35 @@
         </div>
     </div>
     
+    <!-- Password Verification Modal -->
+    <div class="modal fade" id="passwordVerificationModal" tabindex="-1" aria-labelledby="passwordVerificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: var(--pnp-blue); color: white;">
+                    <h5 class="modal-title" id="passwordVerificationModalLabel">
+                        <i class="fas fa-lock me-2"></i>
+                        Password Verification
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="verificationPassword" class="form-label">Enter Dashboard Password</label>
+                        <input type="password" class="form-control" id="verificationPassword" placeholder="Enter password">
+                    </div>
+                    <div id="passwordError" class="text-danger" style="display: none;">
+                        <i class="fas fa-exclamation-circle me-1"></i>
+                        Invalid password. Please try again.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="verifyPassword" style="background-color: var(--pnp-blue);">Verify</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Toast notifications -->
     <div class="toast-container">
         <div class="toast align-items-center text-white border-0" id="deleteToast" role="alert" aria-live="assertive" aria-atomic="true" style="background-color: var(--pnp-red);">
@@ -478,6 +507,63 @@
             let entryToDelete = null;
             const access_key = '{{ access_key }}';
             
+            // Password verification handling
+            let pendingAction = null;
+            const passwordModal = new bootstrap.Modal(document.getElementById('passwordVerificationModal'));
+            const verificationPassword = document.getElementById('verificationPassword');
+            const passwordError = document.getElementById('passwordError');
+            const verifyButton = document.getElementById('verifyPassword');
+
+            // Function to handle password verification
+            function verifyPassword(password) {
+                return fetch(`/verify-password/${access_key}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password: password })
+                })
+                .then(response => response.json())
+                .then(data => data.success);
+            }
+
+            // Function to execute pending action after successful verification
+            function executePendingAction() {
+                if (pendingAction) {
+                    pendingAction();
+                    pendingAction = null;
+                }
+            }
+
+            // Handle password verification
+            verifyButton.addEventListener('click', function() {
+                const password = verificationPassword.value;
+                verifyPassword(password)
+                    .then(success => {
+                        if (success) {
+                            passwordModal.hide();
+                            verificationPassword.value = '';
+                            passwordError.style.display = 'none';
+                            executePendingAction();
+                        } else {
+                            passwordError.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        passwordError.style.display = 'block';
+                    });
+            });
+
+            // Handle download button click
+            document.querySelector('.download-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                pendingAction = () => {
+                    window.location.href = `/download-csv/${access_key}?password=${encodeURIComponent(verificationPassword.value)}`;
+                };
+                passwordModal.show();
+            });
+
             // Handle delete button click
             const deleteModal = document.getElementById('deleteModal');
             deleteModal.addEventListener('show.bs.modal', function(event) {
@@ -488,62 +574,76 @@
             // Handle confirm delete
             document.getElementById('confirmDelete').addEventListener('click', function() {
                 if (entryToDelete !== null) {
-                    fetch(`/delete-entry/${access_key}/${entryToDelete}`, {
-                        method: 'DELETE'
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            // Close modal
-                            const bsDeleteModal = bootstrap.Modal.getInstance(deleteModal);
-                            bsDeleteModal.hide();
-                            
-                            // Remove row from table
-                            const rows = document.querySelectorAll('tr[data-entry-index]');
-                            for (const row of rows) {
-                                if (row.getAttribute('data-entry-index') === entryToDelete) {
-                                    row.remove();
-                                    break;
+                    pendingAction = () => {
+                        fetch(`/delete-entry/${access_key}/${entryToDelete}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ password: verificationPassword.value })
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                // Close modal
+                                const bsDeleteModal = bootstrap.Modal.getInstance(deleteModal);
+                                bsDeleteModal.hide();
+                                
+                                // Remove row from table
+                                const rows = document.querySelectorAll('tr[data-entry-index]');
+                                for (const row of rows) {
+                                    if (row.getAttribute('data-entry-index') === entryToDelete) {
+                                        row.remove();
+                                        break;
+                                    }
                                 }
+                                
+                                // Update entry count
+                                const countBadge = document.querySelector('.badge.bg-primary');
+                                if (countBadge) {
+                                    const currentCount = parseInt(countBadge.textContent);
+                                    countBadge.textContent = currentCount - 1;
+                                }
+                                
+                                // Show toast
+                                const toast = new bootstrap.Toast(document.getElementById('deleteToast'));
+                                toast.show();
+                            } else {
+                                alert('Failed to delete entry. Please try again.');
                             }
-                            
-                            // Update entry count
-                            const countBadge = document.querySelector('.badge.bg-primary');
-                            if (countBadge) {
-                                const currentCount = parseInt(countBadge.textContent);
-                                countBadge.textContent = currentCount - 1;
-                            }
-                            
-                            // Show toast
-                            const toast = new bootstrap.Toast(document.getElementById('deleteToast'));
-                            toast.show();
-                        } else {
-                            alert('Failed to delete entry. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while deleting the entry.');
-                    });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while deleting the entry.');
+                        });
+                    };
+                    passwordModal.show();
                 }
             });
             
             // Handle delete all
             document.getElementById('confirmDeleteAll').addEventListener('click', function() {
-                fetch(`/delete-all/${access_key}`, {
-                    method: 'DELETE'
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Reload the page to reflect the changes
-                        window.location.reload();
-                    } else {
-                        alert('Failed to delete all entries. Please try again.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while deleting all entries.');
-                });
+                pendingAction = () => {
+                    fetch(`/delete-all/${access_key}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password: verificationPassword.value })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Reload the page to reflect the changes
+                            window.location.reload();
+                        } else {
+                            alert('Failed to delete all entries. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting all entries.');
+                    });
+                };
+                passwordModal.show();
             });
         });
     </script>
