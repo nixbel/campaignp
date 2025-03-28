@@ -457,22 +457,29 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Flag to prevent auto-logout during intentional operations
+            let preventAutoLogout = false;
+            
             // Add event listener for window/tab close
             window.addEventListener('beforeunload', function(e) {
-                // Trigger logout when window/tab is closed
-                fetch(`/dashboard-logout/${access_key}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    // Use keepalive to ensure the request completes even if the page is unloading
-                    keepalive: true
-                });
+                // Only trigger logout if not performing an intentional operation
+                if (!preventAutoLogout) {
+                    // Trigger logout when window/tab is closed
+                    fetch(`/dashboard-logout/${access_key}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        // Use keepalive to ensure the request completes even if the page is unloading
+                        keepalive: true
+                    });
+                }
             });
 
             // Add event listener for visibility change
             document.addEventListener('visibilitychange', function() {
-                if (document.visibilityState === 'hidden') {
+                // Only trigger logout if not performing an intentional operation
+                if (!preventAutoLogout && document.visibilityState === 'hidden') {
                     // Page is hidden (tab/window closed or minimized)
                     fetch(`/dashboard-logout/${access_key}`, {
                         method: 'POST',
@@ -486,25 +493,31 @@
 
             // Add event listener for page unload
             window.addEventListener('unload', function(e) {
-                // Trigger logout when page is unloaded
-                fetch(`/dashboard-logout/${access_key}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    keepalive: true
-                });
+                // Only trigger logout if not performing an intentional operation
+                if (!preventAutoLogout) {
+                    // Trigger logout when page is unloaded
+                    fetch(`/dashboard-logout/${access_key}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        keepalive: true
+                    });
+                }
             });
 
             // Add event listener for browser back/forward buttons
             window.addEventListener('popstate', function(e) {
-                fetch(`/dashboard-logout/${access_key}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    keepalive: true
-                });
+                // Only trigger logout if not performing an intentional operation
+                if (!preventAutoLogout) {
+                    fetch(`/dashboard-logout/${access_key}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        keepalive: true
+                    });
+                }
             });
 
             // Update current time every second
@@ -609,6 +622,9 @@
             document.querySelector('.download-btn').addEventListener('click', function(e) {
                 e.preventDefault();
                 pendingAction = () => {
+                    // Set flag to prevent auto-logout
+                    preventAutoLogout = true;
+                    // Navigate to download URL
                     window.location.href = `/download-csv/${access_key}?password=${encodeURIComponent(verificationPassword.value)}`;
                 };
                 passwordModal.show();
@@ -625,6 +641,8 @@
             document.getElementById('confirmDelete').addEventListener('click', function() {
                 if (entryToDelete !== null) {
                     pendingAction = () => {
+                        // Set flag to prevent auto-logout
+                        preventAutoLogout = true;
                         fetch(`/delete-entry/${access_key}/${entryToDelete}`, {
                             method: 'DELETE',
                             headers: {
@@ -673,6 +691,8 @@
             // Handle delete all
             document.getElementById('confirmDeleteAll').addEventListener('click', function() {
                 pendingAction = () => {
+                    // Set flag to prevent auto-logout
+                    preventAutoLogout = true;
                     fetch(`/delete-all/${access_key}`, {
                         method: 'DELETE',
                         headers: {

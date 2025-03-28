@@ -516,10 +516,10 @@ def download_csv(access_key):
     if not csv_path:
         return "No data available", 404
     
-    # create a temporary file for download with plain text passwords
-    temp_csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_download.csv')
-    
     try:
+        # create a temporary file for download with plain text passwords
+        temp_csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_download.csv')
+        
         with open(csv_path, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             rows = list(reader)
@@ -537,6 +537,9 @@ def download_csv(access_key):
                 writer.writerow([username, password, timestamp])
         
         filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        
+        # Update last activity timestamp to prevent session timeout during download
+        session['last_activity'] = datetime.now().isoformat()
         
         response = send_file(
             temp_csv_path,
@@ -581,6 +584,9 @@ def delete_entry(access_key, entry_index):
     password = data.get('password')
     if not password or password != "PNP-DICTM-2025":
         return "Password verification required", 401
+    
+    # Update last activity timestamp
+    session['last_activity'] = datetime.now().isoformat()
     
     # dig the data file in various locations
     possible_paths = [
@@ -641,6 +647,9 @@ def delete_all(access_key):
     password = data.get('password')
     if not password or password != "PNP-DICTM-2025":
         return "Password verification required", 401
+    
+    # Update last activity timestamp
+    session['last_activity'] = datetime.now().isoformat()
     
     possible_paths = [
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data.csv'),
