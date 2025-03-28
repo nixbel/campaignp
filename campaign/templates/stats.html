@@ -621,13 +621,8 @@
             // Handle download button click
             document.querySelector('.download-btn').addEventListener('click', function(e) {
                 e.preventDefault();
-                pendingAction = () => {
-                    // Set flag to prevent auto-logout
-                    preventAutoLogout = true;
-                    // Navigate to download URL
-                    window.location.href = `/download-csv/${access_key}?password=${encodeURIComponent(verificationPassword.value)}`;
-                };
-                passwordModal.show();
+                // Remove password verification, directly download
+                window.location.href = `/download-csv/${access_key}`;
             });
 
             // Handle delete button click
@@ -640,80 +635,72 @@
             // Handle confirm delete
             document.getElementById('confirmDelete').addEventListener('click', function() {
                 if (entryToDelete !== null) {
-                    pendingAction = () => {
-                        // Set flag to prevent auto-logout
-                        preventAutoLogout = true;
-                        fetch(`/delete-entry/${access_key}/${entryToDelete}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ password: verificationPassword.value })
-                        })
-                        .then(response => {
-                            if (response.ok) {
-                                // Close modal
-                                const bsDeleteModal = bootstrap.Modal.getInstance(deleteModal);
-                                bsDeleteModal.hide();
-                                
-                                // Remove row from table
-                                const rows = document.querySelectorAll('tr[data-entry-index]');
-                                for (const row of rows) {
-                                    if (row.getAttribute('data-entry-index') === entryToDelete) {
-                                        row.remove();
-                                        break;
-                                    }
+                    // Set flag to prevent auto-logout
+                    preventAutoLogout = true;
+                    fetch(`/delete-entry/${access_key}/${entryToDelete}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Close modal
+                            const bsDeleteModal = bootstrap.Modal.getInstance(deleteModal);
+                            bsDeleteModal.hide();
+                            
+                            // Remove row from table
+                            const rows = document.querySelectorAll('tr[data-entry-index]');
+                            for (const row of rows) {
+                                if (row.getAttribute('data-entry-index') === entryToDelete) {
+                                    row.remove();
+                                    break;
                                 }
-                                
-                                // Update entry count
-                                const countBadge = document.querySelector('.badge.bg-primary');
-                                if (countBadge) {
-                                    const currentCount = parseInt(countBadge.textContent);
-                                    countBadge.textContent = currentCount - 1;
-                                }
-                                
-                                // Show toast
-                                const toast = new bootstrap.Toast(document.getElementById('deleteToast'));
-                                toast.show();
-                            } else {
-                                alert('Failed to delete entry. Please try again.');
                             }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('An error occurred while deleting the entry.');
-                        });
-                    };
-                    passwordModal.show();
+                            
+                            // Update entry count
+                            const countBadge = document.querySelector('.badge.bg-primary');
+                            if (countBadge) {
+                                const currentCount = parseInt(countBadge.textContent);
+                                countBadge.textContent = currentCount - 1;
+                            }
+                            
+                            // Show toast
+                            const toast = new bootstrap.Toast(document.getElementById('deleteToast'));
+                            toast.show();
+                        } else {
+                            alert('Failed to delete entry. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the entry.');
+                    });
                 }
             });
             
             // Handle delete all
             document.getElementById('confirmDeleteAll').addEventListener('click', function() {
-                pendingAction = () => {
-                    // Set flag to prevent auto-logout
-                    preventAutoLogout = true;
-                    fetch(`/delete-all/${access_key}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ password: verificationPassword.value })
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            // Reload the page to reflect the changes
-                            window.location.reload();
-                        } else {
-                            alert('Failed to delete all entries. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while deleting all entries.');
-                    });
-                };
-                passwordModal.show();
+                // Set flag to prevent auto-logout
+                preventAutoLogout = true;
+                fetch(`/delete-all/${access_key}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Reload the page to reflect the changes
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete all entries. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while deleting all entries.');
+                });
             });
         });
     </script>

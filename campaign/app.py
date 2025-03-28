@@ -495,10 +495,8 @@ def download_csv(access_key):
         # If not authenticated, redirect to dashboard login
         return redirect(url_for('dashboard_login', access_key=access_key))
     
-    # Get password from query parameters
-    password = request.args.get('password')
-    if not password or password != "PNP-DICTM-2025":
-        return "Password verification required", 401
+    # Update last activity timestamp to prevent session timeout during download
+    session['last_activity'] = datetime.now().isoformat()
     
     # try to find the data file in various locations
     possible_paths = [
@@ -538,9 +536,6 @@ def download_csv(access_key):
         
         filename = f"login_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         
-        # Update last activity timestamp to prevent session timeout during download
-        session['last_activity'] = datetime.now().isoformat()
-        
         response = send_file(
             temp_csv_path,
             mimetype='text/csv',
@@ -578,12 +573,6 @@ def delete_entry(access_key, entry_index):
     if 'dashboard_auth' not in session:
         # not authenticated then, return auth error
         return "Authentication required", 401
-    
-    # Get password from request data
-    data = request.get_json()
-    password = data.get('password')
-    if not password or password != "PNP-DICTM-2025":
-        return "Password verification required", 401
     
     # Update last activity timestamp
     session['last_activity'] = datetime.now().isoformat()
@@ -641,12 +630,6 @@ def delete_all(access_key):
     if 'dashboard_auth' not in session:
         # if not authenticated then, return auth error
         return "Authentication required", 401
-    
-    # Get password from request data
-    data = request.get_json()
-    password = data.get('password')
-    if not password or password != "PNP-DICTM-2025":
-        return "Password verification required", 401
     
     # Update last activity timestamp
     session['last_activity'] = datetime.now().isoformat()
