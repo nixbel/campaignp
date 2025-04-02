@@ -177,3 +177,7 @@ This tool is for educational and research purposes only. Always verify the resul
 ## Support
 
 For support, please open an issue in the GitHub repository or contact the maintainers. 
+
+## Created by
+
+Jacques Nico L. Belmonte  || Intern - Camarines Sur Polytechnic Colleges - Bachelor of Science in Computer Science
