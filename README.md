@@ -2,6 +2,35 @@
 
 A Python-based phishing detection system that analyzes URLs and web content to identify potential phishing attempts. This system uses machine learning and various security checks to evaluate the legitimacy of websites.
 
+## Project Goal
+
+The primary goal of this phishing detection system is to:
+
+1. **Prevent Phishing Attacks**: Identify and flag potential phishing websites before they can cause harm to users and organizations.
+
+2. **Protect Users**: Provide an automated tool that helps users verify the legitimacy of websites they visit, reducing the risk of falling victim to phishing scams.
+
+3. **Enhance Security**: Implement multiple layers of security checks including:
+   - URL analysis
+   - Content verification
+   - Domain reputation checking
+   - SSL certificate validation
+   - Machine learning-based detection
+
+4. **Educate Users**: Help users understand the characteristics of phishing websites and how to identify them.
+
+5. **Support Organizations**: Provide a tool that organizations can use to:
+   - Scan their domains for potential phishing attempts
+   - Monitor for unauthorized use of their brand
+   - Protect their customers and employees from phishing attacks
+
+6. **Research and Development**: Contribute to the field of cybersecurity by:
+   - Developing new detection methods
+   - Improving existing phishing detection techniques
+   - Creating a dataset of phishing indicators
+
+This project aims to be a comprehensive solution for phishing detection while maintaining high accuracy and minimizing false positives.
+
 ## Features
 
 - URL Analysis
