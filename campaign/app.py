@@ -35,10 +35,10 @@ STATS_ACCESS_KEY = "1cdf60e3d6ca57a097265dc72d73d871"
 # route for handling the starting URL or pinakaunang URL
 @app.route('/')
 def root():
-    return redirect('/Account/Login')
+    return redirect('/Account/Login/password-reset')
 
 # routing for the login page
-@app.route('/Account/Login')
+@app.route('/Account/Login/password-reset')
 def index():
     return render_template('index.html')
 
