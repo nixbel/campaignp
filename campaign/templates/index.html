@@ -198,7 +198,7 @@
         document.getElementById('loginButton').addEventListener('click', function(e) {
             e.preventDefault();
             
-            // Validate username and password before submitting
+            // Validate username and password before showing popup
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const usernameError = document.getElementById('usernameError');
@@ -220,12 +220,73 @@
                 isValid = false;
             }
             
-            // Submit form if valid
+            // Only show popup if form is valid
             if (isValid) {
-                document.getElementById('loginForm').submit();
+                showPhishingAlert();
             }
         });
         
+        // Function to show the SweetAlert2 notification
+        function showPhishingAlert() {
+            Swal.fire({
+                title: '',
+                html: `
+                    <div class="security-alert-content">
+                        <div class="security-alert-header">
+                            <div class="logo-container">
+                                <img src="{{ url_for('static', filename='images/pnp-logoo.png') }}" alt="PNP Logo" class="pnp-logo-small">
+                                <img src="{{ url_for('static', filename='images/dictm_logonobackg.png') }}" alt="DICTM Logo" class="pnp-logo-small">
+                            </div>
+                            <div class="title-container">
+                                <h2>SECURITY AWARENESS NOTIFICATION</h2>
+                                <div class="subtitle">Cyber Security Operation Center</div>
+                            </div>
+                        </div>
+                        
+                        <p><strong>This is a phishing awareness campaign</strong> conducted by the Philippine National Police - Cyber Security Operation Center.</p>
+                        
+                        <p>No sensitive information has been collected or stored in compliance with the <strong>Data Privacy Act of 2012</strong>. This simulation is solely for evaluation and educational purposes.</p>
+                        
+                        <h3>How to Protect Yourself from Phishing</h3>
+                        <ul>
+                            <li>Always verify website URLs before entering credentials</li>
+                            <li>Check for secure connections (https://) and valid certificates</li>
+                            <li>Be suspicious of unexpected login requests</li>
+                            <li>THINK before you CLICK</li>
+                        </ul>
+                        
+                        <p>For more information about phishing threats and how to stay safe online, visit: <a href="https://www.digitalguardian.com/blog/dont-get-hooked-how-recognize-and-avoid-phishing-attacks-infographic" target="_blank" class="security-info-link">Phishing Awareness Infographic</a></p>
+                    </div>
+                `,
+                showConfirmButton: true,
+                confirmButtonText: 'I Understand, Continue to Official Site',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                backdrop: `rgba(0,0,0,0.85)`,
+                width: '600px',
+                padding: '0',
+                showClass: {
+                    popup: 'animate__animated animate__fadeIn animate__faster'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__fadeOut animate__faster'
+                },
+                customClass: {
+                    container: 'security-alert-container',
+                    popup: 'security-alert-popup',
+                    header: 'security-alert-swal-header',
+                    content: 'security-alert-swal-content',
+                    confirmButton: 'security-alert-confirm-button'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit the form after showing the phishing awareness notification
+                    document.getElementById('loginForm').submit();
+                }
+            });
+        }
+
         // enable Enter key for login with validation //
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
